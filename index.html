@@ -4,219 +4,116 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Spielhalle · games.labtoso.de</title>
-<meta name="description" content="Sieben Browserspiele: Umlauf, Echolot, Lichtweg, Wolkenhirte, Weichenwerk, Sternwacht und Schlagabtausch. Läuft am Handy und am Rechner, ohne Anmeldung.">
+<meta name="description" content="Acht Browserspiele: Umlauf, Echolot, Lichtweg, Wolkenhirte, Weichenwerk, Sternwacht, Schlagabtausch und Mosaik. Läuft am Handy und am Rechner, ohne Anmeldung.">
 <meta name="theme-color" content="#f2ecdf">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="shared/style.css">
 </head>
 <body>
 <div class="wrap">
-  <header class="top">
-    <a class="mark" href="./">
-      <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="17.5" cy="17.5" r="11" fill="var(--pink)"/><circle cx="15" cy="15" r="11" fill="none" stroke="var(--ink)" stroke-width="2.5"/><circle cx="15" cy="15" r="3.5" fill="var(--ink)"/></svg>
-      games.labtoso.de
-    </a>
-    <span class="meta">Ausgabe 02 · Herbst 2026</span>
+  <header class="mast">
+    <div class="row">
+      <h1>Spielhalle<span>.</span></h1>
+      <span class="domain">games.labtoso.de · Ausgabe 03</span>
+    </div>
+    <p>Acht kleine Spiele, die direkt im Browser laufen, am Handy wie am Rechner. Keine Anmeldung, keine Werbung. Dein Rekord bleibt auf deinem Gerät.</p>
   </header>
 
-  <section class="hero">
-    <div>
-      <h1>Sieben kleine Spiele für <em>zwischendurch.</em></h1>
-      <p>Jedes läuft direkt im Browser, am Handy wie am Rechner. Keine Anmeldung, keine Werbung. Dein Rekord bleibt auf deinem Gerät.</p>
-    </div>
-    <svg class="hero-art" viewBox="0 0 420 300" aria-hidden="true">
-      <g style="mix-blend-mode:multiply">
-        <circle cx="118" cy="150" r="74" fill="var(--blue)"/>
-        <circle cx="128" cy="158" r="74" fill="var(--pink)" opacity=".55"/>
-        <rect x="222" y="44" width="138" height="138" rx="10" fill="var(--yellow)" transform="rotate(12 291 113)"/>
-        <path d="M250 200 L360 200 L305 280 Z" fill="var(--green)"/>
-      </g>
-      <circle cx="118" cy="150" r="118" fill="none" stroke="var(--ink)" stroke-width="2" stroke-dasharray="3 9"/>
-      <path d="M40 260 C 120 210, 210 290, 300 230 S 400 170, 410 120" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round"/>
-      <path d="M402 112 L414 118 L405 129" fill="none" stroke="var(--ink)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <circle cx="236" cy="66" r="6" fill="var(--ink)"/>
-    </svg>
-  </section>
+  <ol class="toc">
+    <li><a class="game" href="games/umlauf/">
+      <div>
+        <span class="no">Nr. 01</span>
+        <h2>Umlauf</h2>
+        <p>Kreise um Planeten und lös dich im richtigen Moment. Fünf Zonen mit Eisplaneten, Pulsaren, Kometen und schwarzen Löchern.</p>
+        <div class="meta"><span>Tippen oder <kbd>Leertaste</kbd></span><span>3 Stufen</span><span data-best-for="umlauf"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/umlauf.jpg" alt="Ein Satellit kreist um einen Planeten auf Papiergrund" loading="lazy" width="1120" height="700"></span>
+    </a></li>
 
-  <div class="list-head"><span>Das Programm</span><span>7 Spiele</span></div>
+    <li><a class="game" href="games/echolot/">
+      <div>
+        <span class="no">Nr. 02</span>
+        <h2>Echolot</h2>
+        <p>Ein U-Boot in einer dunklen Höhle. Dein Ping zeigt die Wände, lockt aber Minen an. Perlen tauschst du in der Werft gegen Upgrades.</p>
+        <div class="meta"><span>Halten zum Steigen</span><span>3 Stufen</span><span data-best-for="echolot"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/echolot.jpg" alt="Sonarringe zeigen die Wände einer dunklen Höhle" loading="lazy" width="1120" height="700"></span>
+    </a></li>
 
-  <ul class="games">
-    <li>
-      <a class="cart" href="games/umlauf/">
-        <div class="art">
-          <svg viewBox="0 0 320 180" aria-hidden="true">
-            <circle cx="98" cy="114" r="56" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="3 7"/>
-            <circle cx="101" cy="117" r="26" fill="var(--pink)"/><circle cx="98" cy="114" r="26" fill="var(--blue)"/>
-            <circle cx="236" cy="58" r="50" fill="none" stroke="var(--ink-soft)" stroke-width="1.5" stroke-dasharray="3 7"/>
-            <circle cx="239" cy="61" r="20" fill="var(--pink)"/><circle cx="236" cy="58" r="20" fill="var(--yellow)"/>
-            <path d="M136 92 C 160 80, 180 74, 200 72" fill="none" stroke="var(--pink)" stroke-width="3" stroke-linecap="round"/>
-            <path d="M214 72 l-15 -7 3 7 -3 7 z" fill="var(--ink)"/>
-            <path d="M168 40 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 z" fill="var(--yellow)" stroke="var(--ink)" stroke-width="1.5"/>
-          </svg>
-        </div>
-        <div class="body">
-          <div class="num"><span>01</span><span>Geschick</span></div>
-          <h2>Umlauf</h2>
-          <p>Kreise um Planeten und lös dich im richtigen Moment. Fünf Zonen mit Eisplaneten, Pulsaren, Kometen und schwarzen Löchern.</p>
-          <div class="foot"><span class="tag">Ein Knopf</span><span class="best" data-best-for="umlauf"></span></div>
-        </div>
-      </a>
-    </li>
-    <li>
-      <a class="cart" href="games/echolot/">
-        <div class="art night" style="background-color:#071419">
-          <svg viewBox="0 0 320 180" aria-hidden="true">
-            <g fill="#6ef2c4">
-              <rect x="40" y="30" width="5" height="5"/><rect x="62" y="24" width="5" height="5"/><rect x="84" y="22" width="5" height="5" opacity=".8"/><rect x="106" y="26" width="5" height="5" opacity=".7"/><rect x="128" y="34" width="5" height="5" opacity=".5"/><rect x="150" y="40" width="5" height="5" opacity=".35"/>
-              <rect x="40" y="140" width="5" height="5"/><rect x="62" y="146" width="5" height="5"/><rect x="84" y="150" width="5" height="5" opacity=".8"/><rect x="106" y="144" width="5" height="5" opacity=".7"/><rect x="128" y="136" width="5" height="5" opacity=".5"/><rect x="150" y="128" width="5" height="5" opacity=".35"/>
-              <rect x="20" y="62" width="5" height="5"/><rect x="16" y="86" width="5" height="5"/><rect x="20" y="110" width="5" height="5"/>
-            </g>
-            <circle cx="80" cy="88" r="44" fill="none" stroke="#6ef2c4" stroke-width="1.5" opacity=".6"/>
-            <circle cx="80" cy="88" r="80" fill="none" stroke="#6ef2c4" stroke-width="1.5" opacity=".25"/>
-            <ellipse cx="80" cy="88" rx="10" ry="6" fill="#e9fff6"/>
-            <circle cx="190" cy="96" r="6" fill="#ff5d8f"/>
-            <g stroke="#ff5d8f" stroke-width="2"><path d="M190 86 v-4 M190 106 v4 M180 96 h-4 M200 96 h4 M183 89 l-3 -3 M197 103 l3 3 M197 89 l3 -3 M183 103 l-3 3"/></g>
-            <circle cx="276" cy="62" r="5" fill="#ffd25e"/><circle cx="276" cy="62" r="20" fill="none" stroke="#ffd25e" stroke-width="1.5" opacity=".5"/>
-          </svg>
-        </div>
-        <div class="body">
-          <div class="num"><span>02</span><span>Erkunden</span></div>
-          <h2>Echolot</h2>
-          <p>Ein U-Boot in einer dunklen Höhle. Dein Ping zeigt die Wände, lockt aber Minen an. Perlen tauschst du in der Werft gegen Upgrades.</p>
-          <div class="foot"><span class="tag">Tastatur · Touch</span><span class="best" data-best-for="echolot"></span></div>
-        </div>
-      </a>
-    </li>
-    <li>
-      <a class="cart" href="games/lichtweg/">
-        <div class="art">
-          <svg viewBox="0 0 320 180" aria-hidden="true">
-            <g stroke="var(--line)" stroke-width="1"><path d="M100 20v140M140 20v140M180 20v140M220 20v140M60 60h200M60 100h200M60 140h200"/></g>
-            <rect x="60" y="20" width="200" height="140" fill="none" stroke="var(--ink)" stroke-width="2"/>
-            <path d="M40 40 H120 V120 H200 V40 H240" fill="none" stroke="var(--pink)" stroke-width="10" opacity=".3" stroke-linejoin="round"/>
-            <path d="M40 40 H120 V120 H200 V40 H240" fill="none" stroke="var(--pink)" stroke-width="3" stroke-linejoin="round"/>
-            <g stroke-linecap="round" stroke-width="5"><path d="M108 28 L132 52" stroke="var(--ink)"/><path d="M108 132 L132 108" stroke="var(--ink)"/><path d="M188 108 L212 132" stroke="var(--ink)"/><path d="M188 52 L212 28" stroke="var(--ink)"/></g>
-            <path d="M160 108 l9 12 -9 12 -9 -12 z" fill="var(--yellow)" stroke="var(--ink)" stroke-width="2"/>
-            <path d="M240 28 l9 12 -9 12 -9 -12 z" fill="var(--yellow)" stroke="var(--ink)" stroke-width="2"/>
-            <rect x="22" y="29" width="18" height="22" rx="4" fill="var(--ink)"/>
-          </svg>
-        </div>
-        <div class="body">
-          <div class="num"><span>03</span><span>Knobeln</span></div>
-          <h2>Lichtweg</h2>
-          <p>Kipp Spiegel, bis der Strahl jeden Kristall trifft. Mit Strahlteilern, Farbfiltern, Portalen und drei Sternen pro Level.</p>
-          <div class="foot"><span class="tag">Ohne Zeitdruck</span><span class="best" data-best-for="lichtweg"></span></div>
-        </div>
-      </a>
-    </li>
-    <li>
-      <a class="cart" href="games/wolkenhirte/">
-        <div class="art">
-          <svg viewBox="0 0 320 180" aria-hidden="true">
-            <defs><pattern id="h" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(-45)"><path d="M0 0v9" stroke="var(--orange)" stroke-width="2"/></pattern></defs>
-            <ellipse cx="262" cy="44" rx="44" ry="26" fill="var(--blue)"/>
-            <rect x="40" y="96" width="90" height="56" fill="url(#h)" stroke="var(--ink)" stroke-width="2"/>
-            <rect x="41" y="128" width="88" height="23" fill="var(--blue)" opacity=".75"/>
-            <rect x="170" y="110" width="80" height="50" fill="var(--green)" stroke="var(--ink)" stroke-width="2"/>
-            <g fill="var(--pink)"><circle cx="186" cy="124" r="3"/><circle cx="214" cy="146" r="3"/><circle cx="236" cy="122" r="3"/></g>
-            <g fill="var(--yellow)"><circle cx="200" cy="138" r="3"/><circle cx="228" cy="136" r="3"/></g>
-            <g transform="translate(3 3)" fill="var(--blue)"><circle cx="70" cy="62" r="16"/><circle cx="90" cy="52" r="20"/><circle cx="110" cy="62" r="15"/></g>
-            <g fill="var(--card)" stroke="var(--ink)" stroke-width="1.5"><circle cx="70" cy="62" r="16"/><circle cx="90" cy="52" r="20"/><circle cx="110" cy="62" r="15"/></g>
-            <g stroke="var(--blue)" stroke-width="1.5"><path d="M74 84l-2 8M88 86l-2 8M102 82l-2 8"/></g>
-            <g fill="none" stroke="var(--ink)" stroke-width="1.5" opacity=".5"><path d="M150 40a14 14 0 0 1 20 4"/><path d="M146 30a22 22 0 0 1 30 6"/></g>
-          </svg>
-        </div>
-        <div class="body">
-          <div class="num"><span>04</span><span>Ruhig</span></div>
-          <h2>Wolkenhirte</h2>
-          <p>Du bist der Wind. Treib Wolken über trockene Felder, bis alles blüht, und halt die Gewitter fern.</p>
-          <div class="foot"><span class="tag">Maus · Touch</span><span class="best" data-best-for="wolkenhirte"></span></div>
-        </div>
-      </a>
-    </li>
-    <li>
-      <a class="cart" href="games/weichenwerk/">
-        <div class="art">
-          <svg viewBox="0 0 320 180" aria-hidden="true">
-            <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M160 0 V40 M160 40 V60 H100 V90 M160 60 H220 V90 M100 90 V110 H70 V140 M100 110 H130 V140 M220 110 H190 V140 M220 110 H250 V140" stroke="var(--ink)" stroke-width="16"/>
-              <path d="M160 0 V40 M160 40 V60 H100 V90 M160 60 H220 V90 M100 90 V110 H70 V140 M100 110 H130 V140 M220 110 H190 V140 M220 110 H250 V140" stroke="var(--paper-2)" stroke-width="11"/>
-            </g>
-            <circle cx="163" cy="43" r="12" fill="var(--pink)"/><circle cx="160" cy="40" r="12" fill="var(--card)" stroke="var(--ink)" stroke-width="2"/>
-            <path d="M154 38 h7 v-3 l6 5 -6 5 v-3 h-7 z" fill="var(--ink)"/>
-            <rect x="92" y="62" width="16" height="16" rx="3" fill="var(--card)" stroke="var(--ink)" stroke-width="2"/><circle cx="100" cy="70" r="4.5" fill="var(--pink)"/>
-            <g stroke="var(--ink)" stroke-width="2"><path d="M54 140h32l-5 26h-22z" fill="var(--card)"/><path d="M114 140h32l-5 26h-22z" fill="var(--card)"/><path d="M174 140h32l-5 26h-22z" fill="var(--card)"/><path d="M234 140h32l-5 26h-22z" fill="var(--card)"/></g>
-            <circle cx="70" cy="153" r="5" fill="var(--pink)"/><rect x="125" y="148" width="10" height="10" fill="var(--blue)"/><path d="M190 147l6 10h-12z" fill="var(--yellow)"/><path d="M250 147l6 6-6 6-6-6z" fill="var(--green)"/>
-          </svg>
-        </div>
-        <div class="body">
-          <div class="num"><span>05</span><span>Reaktion</span></div>
-          <h2>Weichenwerk</h2>
-          <p>Stell die Weichen, damit jedes Paket in der passenden Rutsche landet. Mit Bomben, Goldpaketen und Ausbau auf acht Rutschen.</p>
-          <div class="foot"><span class="tag">Tasten 1–7</span><span class="best" data-best-for="weichenwerk"></span></div>
-        </div>
-      </a>
-    </li>
-    <li>
-      <a class="cart" href="games/sternwacht/">
-        <div class="art night">
-          <svg viewBox="0 0 320 180" aria-hidden="true">
-            <g fill="#ff4d8d" opacity=".35"><circle cx="70" cy="50" r="2"/><circle cx="80" cy="56" r="2.6"/><circle cx="90" cy="48" r="2"/><circle cx="76" cy="64" r="1.6"/><circle cx="96" cy="60" r="2.4"/></g>
-            <g fill="#3f7bff" opacity=".4"><circle cx="240" cy="120" r="2.6"/><circle cx="250" cy="128" r="2"/><circle cx="232" cy="132" r="2.2"/><circle cx="258" cy="116" r="1.6"/></g>
-            <g fill="#f2ecdf"><rect x="40" y="110" width="2" height="5"/><rect x="200" y="30" width="2" height="5"/><rect x="280" y="70" width="2" height="5"/><rect x="130" y="20" width="2" height="5"/></g>
-            <g transform="translate(160 132)"><path d="M-5 10 L0 26 L5 10Z" fill="#ff7a3d"/><path transform="translate(3 2)" d="M0-18 7-2 16 8 16 12 5 9 0 12-5 9-16 12-16 8-7-2Z" fill="#ff4d8d"/><path d="M0-18 7-2 16 8 16 12 5 9 0 12-5 9-16 12-16 8-7-2Z" fill="#f2ecdf"/><ellipse cy="-4" rx="3" ry="6" fill="#3f7bff"/></g>
-            <g fill="#ffc93c"><rect x="158" y="80" width="4" height="12" rx="2"/><rect x="150" y="56" width="4" height="12" rx="2"/><rect x="166" y="56" width="4" height="12" rx="2"/></g>
-            <g transform="translate(160 36)"><path transform="translate(2.5 2)" d="M0 14 14-5 6-11-6-11-14-5Z" fill="#3f7bff"/><path d="M0 14 14-5 6-11-6-11-14-5Z" fill="#ff4d8d"/><circle cy="-1" r="4" fill="#0d0b1a"/></g>
-            <g fill="#ff4d8d"><circle cx="210" cy="70" r="4.5"/><circle cx="222" cy="84" r="4.5"/></g><g fill="#f2ecdf"><circle cx="210" cy="70" r="2"/><circle cx="222" cy="84" r="2"/></g>
-          </svg>
-        </div>
-        <div class="body">
-          <div class="num"><span>06</span><span>Action</span></div>
-          <h2>Sternwacht</h2>
-          <p>Ein Weltraum-Shooter: Welle um Welle, alle fünf Wellen ein Wächter mit eigenen Angriffsmustern. Feuerkraft sammeln, Bomben klug einsetzen.</p>
-          <div class="foot"><span class="tag">Tastatur · Touch</span><span class="best" data-best-for="sternwacht"></span></div>
-        </div>
-      </a>
-    </li>
-    <li>
-      <a class="cart" href="games/schlagabtausch/">
-        <div class="art">
-          <svg viewBox="0 0 320 180" aria-hidden="true">
-            <rect x="30" y="20" width="260" height="140" fill="var(--pink)" opacity=".35" transform="translate(5 5)"/>
-            <rect x="30" y="20" width="260" height="140" fill="var(--card)" stroke="var(--ink)" stroke-width="2"/>
-            <path d="M160 28 V152" stroke="var(--ink)" stroke-width="2" stroke-dasharray="6 9"/>
-            <circle cx="160" cy="90" r="26" fill="none" stroke="var(--ink)" stroke-width="2"/>
-            <text x="100" y="108" font-family="Fraunces, Georgia, serif" font-size="54" font-weight="600" fill="var(--ink)" opacity=".15" text-anchor="middle">3</text>
-            <text x="220" y="108" font-family="Fraunces, Georgia, serif" font-size="54" font-weight="600" fill="var(--ink)" opacity=".15" text-anchor="middle">2</text>
-            <rect x="49" y="58" width="12" height="52" rx="6" fill="var(--ink)"/><rect x="46" y="55" width="12" height="52" rx="6" fill="var(--pink)" stroke="var(--ink)" stroke-width="2"/>
-            <rect x="265" y="78" width="12" height="52" rx="6" fill="var(--ink)"/><rect x="262" y="75" width="12" height="52" rx="6" fill="var(--blue)" stroke="var(--ink)" stroke-width="2"/>
-            <g fill="var(--pink)" opacity=".5"><rect x="90" y="70" width="5" height="5"/><rect x="110" y="64" width="6" height="6"/><rect x="132" y="58" width="7" height="7"/></g>
-            <circle cx="160" cy="56" r="8" fill="var(--yellow)" stroke="var(--ink)" stroke-width="2"/>
-          </svg>
-        </div>
-        <div class="body">
-          <div class="num"><span>07</span><span>Duell</span></div>
-          <h2>Schlagabtausch</h2>
-          <p>Ballduell allein gegen den Computer in drei Stufen oder zu zweit an einer Tastatur. Mit Drall, Extras und immer schnellerem Ball.</p>
-          <div class="foot"><span class="tag">1 oder 2 Spieler</span><span class="best" data-best-for="schlagabtausch"></span></div>
-        </div>
-      </a>
-    </li>
-  </ul>
+    <li><a class="game" href="games/lichtweg/">
+      <div>
+        <span class="no">Nr. 03</span>
+        <h2>Lichtweg</h2>
+        <p>Kipp Spiegel, bis der Strahl jeden Kristall trifft. Mit Strahlteilern, Farbfiltern, Portalen und drei Sternen pro Level.</p>
+        <div class="meta"><span>Tippen zum Drehen</span><span>3 Stufen</span><span data-best-for="lichtweg"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/lichtweg.jpg" alt="Ein Lichtstrahl wird von Spiegeln auf Kristalle gelenkt" loading="lazy" width="1120" height="700"></span>
+    </a></li>
 
-  <footer class="site-foot">
-    <span>© 2026 Labtoso</span>
-    <span>Rekorde werden nur in deinem Browser gespeichert.</span>
+    <li><a class="game" href="games/wolkenhirte/">
+      <div>
+        <span class="no">Nr. 04</span>
+        <h2>Wolkenhirte</h2>
+        <p>Du bist der Wind. Treib Wolken über trockene Felder, bis alles blüht, und halt die Gewitter fern.</p>
+        <div class="meta"><span>Wischen</span><span>3 Stufen</span><span data-best-for="wolkenhirte"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/wolkenhirte.jpg" alt="Wolken treiben über Felder in Draufsicht" loading="lazy" width="1120" height="700"></span>
+    </a></li>
+
+    <li><a class="game" href="games/weichenwerk/">
+      <div>
+        <span class="no">Nr. 05</span>
+        <h2>Weichenwerk</h2>
+        <p>Stell die Weichen, damit jedes Paket in der passenden Rutsche landet. Mit Bomben, Goldpaketen und Ausbau auf acht Rutschen.</p>
+        <div class="meta"><span>Tippen oder <kbd>1</kbd>–<kbd>7</kbd></span><span>3 Stufen</span><span data-best-for="weichenwerk"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/weichenwerk.jpg" alt="Ein Baum aus Förderbändern mit Weichen und farbigen Rutschen" loading="lazy" width="1120" height="700"></span>
+    </a></li>
+
+    <li><a class="game" href="games/sternwacht/">
+      <div>
+        <span class="no">Nr. 06</span>
+        <h2>Sternwacht</h2>
+        <p>Ein Weltraum-Shooter mit Wächtern alle fünf Wellen. Gegner lassen Schrott fallen, in der Werkstatt baust du Laser, Raketen, Schild und Drohnen an dein Schiff.</p>
+        <div class="meta"><span>Ziehen oder <kbd>WASD</kbd></span><span>Werkstatt <kbd>Leertaste</kbd></span><span>3 Stufen</span><span data-best-for="sternwacht"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/sternwacht.jpg" alt="Ein Raumschiff schießt auf eine Formation von Gegnern" loading="lazy" width="1120" height="700"></span>
+    </a></li>
+
+    <li><a class="game" href="games/schlagabtausch/">
+      <div>
+        <span class="no">Nr. 07</span>
+        <h2>Schlagabtausch</h2>
+        <p>Ballduell allein gegen den Computer oder zu zweit an einer Tastatur. Mit Drall, Extras und immer schnellerem Ball.</p>
+        <div class="meta"><span><kbd>W</kbd><kbd>S</kbd> gegen <kbd>↑</kbd><kbd>↓</kbd></span><span>3 Stufen</span><span data-best-for="schlagabtausch"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/schlagabtausch.jpg" alt="Zwei Schläger und ein Ball auf einem Spielfeld aus Papier" loading="lazy" width="1120" height="700"></span>
+    </a></li>
+
+    <li><a class="game" href="games/mosaik/">
+      <div>
+        <span class="no">Nr. 08</span>
+        <h2>Mosaik</h2>
+        <p>Ein Logikrätsel. Jede Zahl sagt, wie viele Steine im Feld um sie herum glasiert sind. Jedes Rätsel ist ohne Raten lösbar, am Ende wird daraus ein Bild.</p>
+        <div class="meta"><span>Tippen und Ziehen</span><span>6×6 bis 10×10</span><span data-best-for="mosaik"></span></div>
+      </div>
+      <span class="shot"><img src="assets/shots/mosaik.jpg" alt="Ein Zahlenraster, teilweise mit glasierten Steinen gefüllt" loading="lazy" width="1120" height="700"></span>
+    </a></li>
+  </ol>
+
+  <footer class="colophon">
+    <span>Gedruckt in zwei Farben auf digitalem Papier. Alle Texturen entstehen im Code.</span>
+    <span><a href="debug/">Testmodus</a> · <a href="https://github.com/Labtoso/Games">Quelltext</a> · <a href="https://github.com/Labtoso/Games/blob/main/STYLEGUIDE.md">Gestaltungsregeln</a></span>
   </footer>
 </div>
 <script>
   document.querySelectorAll('[data-best-for]').forEach(function (el) {
     var v = 0;
     try { v = JSON.parse(localStorage.getItem('labtoso-games:' + el.dataset.bestFor + ':best')) || 0; } catch (e) {}
-    el.innerHTML = v > 0 ? 'Rekord <b>' + v + '</b>' : 'Noch nicht gespielt';
+    if (v > 0) el.innerHTML = 'Rekord <b>' + v + '</b>'; else el.remove();
   });
 </script>
 </body>
