@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What does it sell? · games.labtoso.de</title>
+<meta name="description" content="Guess what a real website sells from a blurred screenshot.">
+<meta name="theme-color" content="#f2ecdf">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../shared/style.css">
+</head>
+<body class="game-page guess-page" data-game="guess">
+<header class="bar">
+  <a class="back" href="../../">← Arcade</a>
+  <h1>What does it sell?</h1>
+  <button class="mute" type="button" data-mute>Sound on</button>
+  <div class="scores"><span>Score <b data-score>0</b></span><span>Best <b data-best>0</b></span></div>
+</header>
+<main class="stage">
+  <canvas id="c" aria-label="Website screenshot"></canvas>
+  <div class="overlay" hidden><div class="card"><h2></h2><p></p><button class="btn" type="button"></button></div></div>
+</main>
+<section class="answers" aria-live="polite">
+  <div class="status"><span data-round></span><span data-reveal></span><span data-timer></span></div>
+  <div class="options" data-options></div>
+  <form class="free" data-free hidden><input type="text" autocomplete="off" placeholder="What does it sell?" aria-label="Your guess"><button type="submit">Guess</button></form>
+  <div class="tools"><button type="button" data-more>Reveal more</button><button type="button" data-next hidden>Next</button><a data-site hidden rel="noopener noreferrer nofollow" target="_blank"></a><button type="button" class="report" data-report>Report</button></div>
+</section>
+<footer class="hint disclaimer"><span>Screenshots show real third-party websites and are used for a guessing game only. All names, logos and trademarks belong to their owners. We are not affiliated with or endorsed by any of these sites. Screenshots may be outdated. Want a site removed? <a href="https://github.com/Labtoso/Games/issues/new?labels=removal&amp;title=Remove%20a%20site%20from%20the%20guessing%20game" rel="noopener noreferrer">Open an issue</a>.</span></footer>
+<script src="../../shared/shell.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

@@ -108,7 +108,7 @@
     let d = raw.get('debug', null);
     if (q.get('debug') === '0') { d = null; raw.set('debug', null); }
     else if (q.has('debug')) { d = Object.assign({}, d || {}, { on: true }); raw.set('debug', d); }
-    const base = { on: false, god: false, fps: true, hitbox: false, speed: 1, textures: true, start: 1, diff: '', money: 0 };
+    const base = { on: false, god: false, fps: true, hitbox: false, speed: 1, textures: true, start: 1, diff: '', money: 0, solution: false };
     const out = Object.assign(base, d || {});
     if (out.on) {
       const num = (k) => (q.has(k) ? Number(q.get(k)) : null);
@@ -116,7 +116,7 @@
       if (num('level') != null) out.start = Math.max(1, num('level') | 0);
       if (num('money') != null) out.money = Math.max(0, num('money') | 0);
       if (num('speed') != null) out.speed = S.clamp(num('speed'), 0.1, 4);
-      ['god', 'fps', 'hitbox', 'textures'].forEach((k) => { if (bool(k) != null) out[k] = bool(k); });
+      ['god', 'fps', 'hitbox', 'textures', 'solution'].forEach((k) => { if (bool(k) != null) out[k] = bool(k); });
       if (q.has('diff')) out.diff = q.get('diff');
       out.params = q;
     }
@@ -534,7 +534,14 @@
         const nf = noiseField(sw, sh, 9, 5, 4);
         const small = canvas(sw, sh), sx = small.getContext('2d'), id = sx.createImageData(sw, sh);
         const ink = P.dark ? 255 : 40;
-        for (let i = 0; i < sw * sh; i++) { const v = nf[i]; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = ink; id.data[i * 4 + 3] = Math.max(0, (v - 0.45)) * (P.dark ? 40 : 70); }
+        const rim = Math.min(sw, sh) * 0.28;
+        for (let i = 0; i < sw * sh; i++) {
+          // cloudy fibres plus mottled, darker paper towards the edges (noise, not a gradient)
+          const v = nf[i], px = i % sw, py = (i / sw) | 0;
+          const e = Math.max(0, 1 - Math.min(px, py, sw - 1 - px, sh - 1 - py) / rim);
+          id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = ink;
+          id.data[i * 4 + 3] = Math.max(0, (v - 0.45)) * (P.dark ? 40 : 70) + e * e * (0.35 + v * 0.65) * (P.dark ? 60 : 34);
+        }
         sx.putImageData(id, 0, 0);
         x.imageSmoothingEnabled = true; x.drawImage(small, 0, 0, W, H);
         const r = rng(91); x.strokeStyle = P.ink; x.lineWidth = 0.6;
@@ -544,9 +551,6 @@
           x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + Math.cos(a) * l * 0.5 + 2, py + Math.sin(a) * l * 0.5 - 2, px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke();
         }
         x.globalAlpha = 1;
-        const g = x.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
-        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, P.dark ? 'rgba(0,0,0,0.35)' : 'rgba(80,60,30,0.12)');
-        x.fillStyle = g; x.fillRect(0, 0, W, H);
       });
       ctx.drawImage(img, 0, 0, w, h);
     }
