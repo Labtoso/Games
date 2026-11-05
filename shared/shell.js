@@ -3,12 +3,18 @@
   const S = {};
 
   S.css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-  S.palette = () => ({
-    paper: S.css('--paper'), paper2: S.css('--paper-2'), ink: S.css('--ink'), soft: S.css('--ink-soft'),
-    line: S.css('--line'), pink: S.css('--pink'), blue: S.css('--blue'), yellow: S.css('--yellow'),
-    green: S.css('--green'), orange: S.css('--orange'), card: S.css('--card'),
-    dark: matchMedia('(prefers-color-scheme: dark)').matches,
-  });
+  S.palette = () => {
+    const p = {
+      paper: S.css('--paper'), paper2: S.css('--paper-2'), ink: S.css('--ink'), soft: S.css('--ink-soft'),
+      line: S.css('--line'), pink: S.css('--pink'), blue: S.css('--blue'), yellow: S.css('--yellow'),
+      green: S.css('--green'), orange: S.css('--orange'), card: S.css('--card'),
+      dark: matchMedia('(prefers-color-scheme: dark)').matches,
+    };
+    S.wearColor = p.paper;
+    return p;
+  };
+  S.wearColor = '#f2ecdf';
+  S.setWear = (c) => { S.wearColor = c; };
 
   S.rand = (a, b) => a + Math.random() * (b - a);
   S.randInt = (a, b) => Math.floor(S.rand(a, b + 1));
@@ -41,10 +47,16 @@
 
   /* Spielschleife mit begrenztem Zeitschritt */
   S.loop = function (step) {
-    let last = performance.now();
+    let last = performance.now(), frames = 0, acc = 0;
     function frame(t) {
-      const dt = Math.min(0.04, Math.max(0, (t - last) / 1000));
+      const raw = Math.max(0, (t - last) / 1000);
+      let dt = Math.min(0.04, raw);
       last = t;
+      if (S.debug.on) {
+        dt *= S.debug.speed || 1;
+        frames++; acc += raw;
+        if (acc > 0.5) { if (S.debug.el && S.debug.fps) S.debug.el.textContent = Math.round(frames / acc); frames = 0; acc = 0; }
+      }
       step(dt, t / 1000);
       requestAnimationFrame(frame);
     }
@@ -55,6 +67,32 @@
     get(k, d) { try { const v = localStorage.getItem('labtoso-games:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem('labtoso-games:' + k, JSON.stringify(v)); } catch (e) { /* egal */ } },
   };
+
+  /* Debug-Modus: über /debug einschalten, Werte liegen im localStorage */
+  S.debug = (function () {
+    const q = new URLSearchParams(location.search);
+    let d = S.store.get('debug', null);
+    if (q.get('debug') === '0') { d = null; S.store.set('debug', null); }
+    else if (q.has('debug')) { d = Object.assign({}, d || {}, { on: true }); S.store.set('debug', d); }
+    const base = { on: false, god: false, fps: true, hitbox: false, speed: 1, textures: true, start: 1 };
+    return Object.assign(base, d || {});
+  })();
+  S.dbg = {
+    next: null,
+    circle(ctx, x, y, r, c = '#00e5ff') { if (!S.debug.on || !S.debug.hitbox) return; ctx.save(); ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke(); ctx.restore(); },
+    rect(ctx, x, y, w, h, c = '#00e5ff') { if (!S.debug.on || !S.debug.hitbox) return; ctx.save(); ctx.strokeStyle = c; ctx.lineWidth = 1; ctx.strokeRect(x, y, w, h); ctx.restore(); },
+  };
+  if (S.debug.on) {
+    const mount = () => {
+      const el = document.createElement('div');
+      el.className = 'debug-hud';
+      el.innerHTML = '<b>DEBUG</b> <span data-fps>–</span> fps · <kbd>N</kbd> weiter · <a href="../../debug/">Einstellungen</a>';
+      document.body.appendChild(el);
+      S.debug.el = el.querySelector('[data-fps]');
+    };
+    if (document.readyState === 'loading') addEventListener('DOMContentLoaded', mount); else mount();
+    addEventListener('keydown', (e) => { if ((e.key === 'n' || e.key === 'N') && S.dbg.next) S.dbg.next(); });
+  }
 
   S.hud = function (slug) {
     const sc = document.querySelector('[data-score]');
@@ -120,9 +158,11 @@
   };
 
   /* Druckfehler-Optik: Form zweimal leicht versetzt */
-  S.riso = function (ctx, draw, under, over, dx = 2.5, dy = 2) {
+  /* Druckversatz: Form zweimal leicht versetzt, Hauptfarbe mit fleckigem Farbauftrag */
+  S.riso = function (ctx, draw, under, over, dx = 2.5, dy = 2, anchor) {
     ctx.save(); ctx.translate(dx, dy); ctx.fillStyle = under; draw(); ctx.fill(); ctx.restore();
     ctx.fillStyle = over; draw(); ctx.fill();
+    if (S.tex) S.tex.wear(ctx, draw, S.wearColor, 1, anchor);
   };
 
   /* Kleine Partikel */
@@ -269,6 +309,7 @@
 
     // Korn über die ganze Fläche legen (am Ende eines Frames)
     function grain(ctx, w, h, ink, alpha = 1, ox = 0, oy = 0) {
+      if (S.debug && S.debug.on && !S.debug.textures) return;
       const tile = paperTile(ink || '#23202c');
       ctx.save(); ctx.globalAlpha = alpha; ctx.translate(-((ox % 256) + 256) % 256, -((oy % 256) + 256) % 256);
       ctx.fillStyle = pattern(ctx, tile); ctx.fillRect(0, 0, w + 256, h + 256); ctx.restore();
@@ -369,8 +410,101 @@
       cache.set(k, c); return c;
     }
 
-    return { cached, paperTile, grain, halftoneCircle, halftoneRect, hatch, noiseField, nebula, canvas, rng };
+    // Abrieb: kleine Fehlstellen im Farbauftrag wie bei echtem Druck
+    function wearTile(color) {
+      const key = 'wear' + color;
+      if (cache.has(key)) return cache.get(key);
+      const c = canvas(192, 192), x = c.getContext('2d'), r = rng(23);
+      x.fillStyle = color;
+      // feine Poren
+      for (let i = 0; i < 420; i++) { x.globalAlpha = 0.25 + r() * 0.5; const s = 0.6 + r() * 1.4; x.fillRect(r() * 192, r() * 192, s, s); }
+      // wenige größere Fehlstellen
+      for (let i = 0; i < 14; i++) {
+        x.globalAlpha = 0.18 + r() * 0.3; x.beginPath();
+        const cx = r() * 192, cy = r() * 192, rr = 2 + r() * 5;
+        for (let k = 0; k < 9; k++) { const a = (k / 9) * Math.PI * 2, q = rr * (0.6 + r() * 0.6); x.lineTo(cx + Math.cos(a) * q, cy + Math.sin(a) * q); }
+        x.closePath(); x.fill();
+      }
+      // Kratzer
+      x.strokeStyle = color; x.lineWidth = 0.7;
+      for (let i = 0; i < 10; i++) { x.globalAlpha = 0.2 + r() * 0.3; const px = r() * 192, py = r() * 192, a = r() * Math.PI, l = 6 + r() * 16; x.beginPath(); x.moveTo(px, py); x.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke(); }
+      cache.set(key, c);
+      return c;
+    }
+    function wear(ctx, draw, color, alpha = 1, anchor) {
+      if (S.debug && S.debug.on && !S.debug.textures) return;
+      const tile = wearTile(color);
+      if (!tile._pats) tile._pats = new WeakMap();
+      let pat = tile._pats.get(ctx); if (!pat) { pat = ctx.createPattern(tile, 'repeat'); tile._pats.set(ctx, pat); }
+      ctx.save(); draw(); ctx.clip();
+      const ax = anchor ? anchor.x : 0, ay = anchor ? anchor.y : 0;
+      ctx.translate(ax, ay); ctx.globalAlpha *= alpha; ctx.fillStyle = pat;
+      ctx.fillRect(-2000, -2000, 4000, 4000);
+      ctx.restore();
+    }
+
+    // Papiergrund mit Wolken, Fasern und dunkleren Rändern
+    function paperBg(ctx, w, h, P) {
+      if (S.debug && S.debug.on && !S.debug.textures) { ctx.fillStyle = P.paper; ctx.fillRect(0, 0, w, h); return; }
+      const img = cached('paperbg' + P.paper + P.ink, Math.ceil(w), Math.ceil(h), (x, W, H) => {
+        x.fillStyle = P.paper; x.fillRect(0, 0, W, H);
+        const sw = Math.ceil(W / 8), sh = Math.ceil(H / 8);
+        const nf = noiseField(sw, sh, 9, 5, 4);
+        const small = canvas(sw, sh), sx = small.getContext('2d'), id = sx.createImageData(sw, sh);
+        const ink = P.dark ? 255 : 40;
+        for (let i = 0; i < sw * sh; i++) { const v = nf[i]; id.data[i * 4] = id.data[i * 4 + 1] = id.data[i * 4 + 2] = ink; id.data[i * 4 + 3] = Math.max(0, (v - 0.45)) * (P.dark ? 40 : 70); }
+        sx.putImageData(id, 0, 0);
+        x.imageSmoothingEnabled = true; x.drawImage(small, 0, 0, W, H);
+        const r = rng(91); x.strokeStyle = P.ink; x.lineWidth = 0.6;
+        for (let i = 0; i < (W * H) / 2500; i++) {
+          x.globalAlpha = 0.04 + r() * 0.06;
+          const px = r() * W, py = r() * H, a = r() * Math.PI, l = 4 + r() * 14;
+          x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + Math.cos(a) * l * 0.5 + 2, py + Math.sin(a) * l * 0.5 - 2, px + Math.cos(a) * l, py + Math.sin(a) * l); x.stroke();
+        }
+        x.globalAlpha = 1;
+        const g = x.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+        g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, P.dark ? 'rgba(0,0,0,0.35)' : 'rgba(80,60,30,0.12)');
+        x.fillStyle = g; x.fillRect(0, 0, W, H);
+      });
+      ctx.drawImage(img, 0, 0, w, h);
+    }
+
+    // leicht unruhige Linien, wie von Hand gezogen
+    function wobblyRect(ctx, x, y, w, h, amp = 1.2, seed = 1) {
+      const r = rng(Math.floor(seed * 9973) + 1), pts = [];
+      const step = 14;
+      const edge = (x1, y1, x2, y2) => { const L = Math.hypot(x2 - x1, y2 - y1), n = Math.max(2, Math.ceil(L / step)); for (let i = 0; i < n; i++) { const k = i / n; pts.push([x1 + (x2 - x1) * k + (r() - 0.5) * amp, y1 + (y2 - y1) * k + (r() - 0.5) * amp]); } };
+      edge(x, y, x + w, y); edge(x + w, y, x + w, y + h); edge(x + w, y + h, x, y + h); edge(x, y + h, x, y);
+      ctx.beginPath(); pts.forEach((p, i) => (i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]))); ctx.closePath();
+    }
+    function wobblyCircle(ctx, x, y, rad, amp = 1, seed = 1) {
+      const r = rng(Math.floor(seed * 7919) + 1), n = Math.max(16, Math.floor(rad / 2));
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) { const a = (i / n) * Math.PI * 2, q = rad + (i === n ? 0 : (r() - 0.5) * amp * 2); if (i === n) { ctx.closePath(); break; } ctx.lineTo(x + Math.cos(a) * q, y + Math.sin(a) * q); }
+    }
+
+    return { cached, wear, wearTile, paperBg, wobblyRect, wobblyCircle, paperTile, grain, halftoneCircle, halftoneRect, hatch, noiseField, nebula, canvas, rng };
   })();
+
+  /* Schwierigkeit wählen, gemerkt pro Spiel */
+  S.difficulty = function (slug, labels = { leicht: 'Leicht', normal: 'Normal', schwer: 'Schwer' }) {
+    let lv = S.store.get(slug + ':diff', 'normal');
+    if (!(lv in labels)) lv = Object.keys(labels)[1] || Object.keys(labels)[0];
+    return {
+      get value() { return lv; },
+      get label() { return labels[lv]; },
+      pick(map) { return map[lv]; },
+      mount(ov) {
+        const box = ov.extra('');
+        const render = () => {
+          box.innerHTML = `<div class="choice"><span>Stufe</span>${Object.keys(labels).map((k) => `<button data-d="${k}" ${k === lv ? 'aria-pressed="true"' : ''}>${labels[k]}</button>`).join('')}</div>`;
+          box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => { lv = b.dataset.d; S.store.set(slug + ':diff', lv); S.sound.tone(600, 0.05, 'triangle', 0.15); render(); }));
+        };
+        render();
+        return box;
+      },
+    };
+  };
 
   window.Shell = S;
 })();
