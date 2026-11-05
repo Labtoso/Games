@@ -193,14 +193,14 @@
   function drawPaddle(p, col, under) {
     const h = p.h * (p.big > 0 ? 1.5 : 1);
     const r = () => { ctx.beginPath(); ctx.roundRect(p.x - p.w / 2, p.y - h / 2, p.w, h, 6); };
-    S.riso(ctx, r, under, col, 3, 3);
+    S.riso(ctx, r, under, col, 3, 3, p);
     ctx.save(); r(); ctx.clip(); ctx.globalAlpha = 0.35; S.tex.halftoneRect(ctx, p.x - p.w / 2, p.y - h / 2, p.w, h, P.ink, (u) => u * 0.8, 4); ctx.restore();
     ctx.strokeStyle = P.ink; ctx.lineWidth = 2; r(); ctx.stroke();
   }
 
   function draw() {
     const w = st.w, h = st.h;
-    ctx.fillStyle = P.paper; ctx.fillRect(0, 0, w, h);
+    S.tex.paperBg(ctx, w, h, P);
     ctx.save();
     if (shake > 0) ctx.translate(S.rand(-1, 1) * shake * 10, S.rand(-1, 1) * shake * 10);
     const c = court;
@@ -220,7 +220,7 @@
 
     // Stand in großen Ziffern
     if (L) {
-      ctx.font = `600 ${Math.min(120, c.h * 0.28)}px "Fraunces", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `400 ${Math.min(120, c.h * 0.28)}px "Young Serif", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.globalAlpha = 0.16; ctx.fillStyle = P.ink;
       ctx.fillText(String(L.score), c.x + c.w * 0.25, c.y + c.h / 2);
       ctx.fillText(String(R.score), c.x + c.w * 0.75, c.y + c.h / 2);
@@ -248,7 +248,7 @@
         const s = b.r * k * 1.3; ctx.fillRect(b.trail[i] - s / 2, b.trail[i + 1] - s / 2, s, s);
       }
       ctx.globalAlpha = 1;
-      S.riso(ctx, () => { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); }, P.ink, b.slow > 0 ? P.green : P.yellow, 2, 2);
+      S.riso(ctx, () => { ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); }, P.ink, b.slow > 0 ? P.green : P.yellow, 2, 2, b);
       ctx.globalAlpha = 0.4; S.tex.halftoneCircle(ctx, b.x, b.y, b.r, P.ink, -2.3, 3); ctx.globalAlpha = 1;
       ctx.strokeStyle = P.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
     }
@@ -256,6 +256,8 @@
       ctx.fillStyle = P.ink; ctx.font = '600 13px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
       ctx.fillText(`Aufschlag ${server < 0 ? '←' : '→'}`, c.x + c.w / 2, c.y + c.h / 2 + Math.min(60, c.h * 0.14) + 24);
     }
+    for (const b of balls) S.dbg.circle(ctx, b.x, b.y, b.r);
+    if (L) for (const p of [L, R]) { const ph = p.h * (p.big > 0 ? 1.5 : 1); S.dbg.rect(ctx, p.x - p.w / 2, p.y - ph / 2, p.w, ph, '#f0f'); }
     fx.draw(ctx); fl.draw(ctx);
     ctx.restore();
     S.tex.grain(ctx, w, h, P.ink, P.dark ? 0.5 : 1);
@@ -269,7 +271,7 @@
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 1.6 ? 1 - (banner.t - 1.6) / 0.4 : 1;
       ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, court.y + court.h * 0.22);
-      ctx.font = '600 italic 28px "Fraunces", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
+      ctx.font = '400 28px "Young Serif", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
       ctx.restore();
     }
   }
@@ -290,6 +292,7 @@
     render();
   }
 
+  S.dbg.next = () => { if (state === 'play' && L) { balls = []; goal(1); } };
   fitCourt();
   L = paddle(court.x + 22); R = paddle(court.x + court.w - 22);
   hud.best(0);
