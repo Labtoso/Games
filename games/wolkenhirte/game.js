@@ -20,6 +20,8 @@
   let clouds = [], storms = [], fields = [], lake = null, drops = [], bolts = [], level = 1, score = 0, timeLeft = 0, total = 1, state = 'menu', t = 0;
   let heat = 0, heatNext = 0, banner = null, rainSnd = 0, flash = 0;
   const ptr = S.pointer(cv);
+  const diff = S.difficulty('wolkenhirte');
+  const D = () => diff.pick({ leicht: { time: 1.3, dry: 0.7 }, normal: { time: 1, dry: 1 }, schwer: { time: 0.8, dry: 1.3 } });
 
   function rectsOverlap(a, b, m) { return a.x < b.x + b.w + m && a.x + a.w + m > b.x && a.y < b.y + b.h + m && a.y + a.h + m > b.y; }
 
@@ -53,7 +55,7 @@
     storms = [];
     const ns = level >= 3 ? Math.min(1 + Math.floor((level - 3) / 2), 3) : 0;
     for (let i = 0; i < ns; i++) { const c = mkCloud(S.rand(40, w - 40), S.rand(80, h * 0.4), 1); c.storm = true; c.zap = S.rand(1.5, 3); storms.push(c); }
-    total = 40 + fields.length * 11 + (fields.filter((f) => f.crop !== 'wheat').length * 6);
+    total = (40 + fields.length * 11 + (fields.filter((f) => f.crop !== 'wheat').length * 6)) * D().time;
     timeLeft = total;
     heat = 0; heatNext = level >= 2 ? S.rand(12, 20) : Infinity;
     drops = []; bolts = [];
@@ -67,7 +69,7 @@
 
   const cloudR = (c) => (c.storm ? 34 : 20 + c.water * 18);
 
-  function startGame() { level = 1; score = 0; hud.score(0); fx.clear(); fl.clear(); buildLevel(); state = 'play'; banner = { text: 'Tag 1', t: 0 }; }
+  function startGame() { level = S.debug.on ? Math.max(1, S.debug.start) : 1; score = 0; hud.score(0); fx.clear(); fl.clear(); buildLevel(); state = 'play'; banner = { text: 'Tag 1', t: 0 }; }
 
   function moveCloud(c, dt, w, h, all) {
     if (ptr.inside && state !== 'menu') {
@@ -95,7 +97,7 @@
   function update(dt) {
     t += dt;
     const w = st.w, h = st.h;
-    if (state === 'play') timeLeft -= dt;
+    if (state === 'play' && !(S.debug.on && S.debug.god)) timeLeft -= dt;
     // Hitzewelle
     if (state === 'play') {
       heatNext -= dt;
@@ -148,7 +150,7 @@
       }
     }
     if (anyRain) { rainSnd -= dt; if (rainSnd <= 0) { rainSnd = 0.22; snd.noise(0.25, 0.04, 3000); } }
-    const dry = heat > 0 ? 3 : 1;
+    const dry = (heat > 0 ? 3 : 1) * D().dry;
     for (const f of fields) { if (!f.bloom && !f.raining) f.m = Math.max(0, f.m - 0.022 * CROPS[f.crop].dry * dry * dt); if (f.burnt > 0) f.burnt = Math.max(0, f.burnt - dt * 0.4); }
     for (let i = drops.length - 1; i >= 0; i--) { const d = drops[i]; d.y += d.vy * dt; d.life -= dt; if (d.life <= 0) drops.splice(i, 1); }
     for (let i = bolts.length - 1; i >= 0; i--) { bolts[i].life -= dt; if (bolts[i].life <= 0) bolts.splice(i, 1); }
@@ -169,6 +171,7 @@
         snd.tone(330, 0.8, 'sine', 0.15, 0.5);
         setTimeout(() => ov.show(rec && score > 0 ? 'Neuer Rekord!' : 'Die Sonne ist unter',
           `Tag <b>${level}</b>, <b>${score}</b> Punkte. Rekord: <b>${hud.bestValue}</b>.`, 'Neuer Tag', startGame), 500);
+        setTimeout(() => diff.mount(ov), 510);
       }
     }
     fx.update(dt, 0); fl.update(dt);
@@ -205,7 +208,7 @@
     }
     if (f.crop === 'orchard') for (const tr of f.trees) {
       ctx.fillStyle = P.ink; ctx.fillRect(f.x + tr.x - 1, f.y + tr.y, 2, 6);
-      S.riso(ctx, () => { ctx.beginPath(); ctx.arc(f.x + tr.x, f.y + tr.y - 2, f.bloom ? 7 : 5, 0, Math.PI * 2); }, P.ink, f.bloom ? P.green : P.soft, 1.5, 1.5);
+      S.riso(ctx, () => { ctx.beginPath(); ctx.arc(f.x + tr.x, f.y + tr.y - 2, f.bloom ? 7 : 5, 0, Math.PI * 2); }, P.ink, f.bloom ? P.green : P.soft, 1.5, 1.5, f);
       if (f.bloom) { ctx.fillStyle = P.pink; ctx.beginPath(); ctx.arc(f.x + tr.x + 2, f.y + tr.y - 3, 1.8, 0, Math.PI * 2); ctx.fill(); }
     }
     if (f.burnt > 0) { ctx.globalAlpha = f.burnt * 0.6; tx.halftoneRect(ctx, f.x, f.y, f.w, f.h, P.ink, 0.7, 5); ctx.globalAlpha = 1; }
@@ -243,10 +246,10 @@
 
   function draw() {
     const w = st.w, h = st.h;
-    ctx.fillStyle = P.paper; ctx.fillRect(0, 0, w, h);
+    S.tex.paperBg(ctx, w, h, P);
     if (heat > 0) { ctx.globalAlpha = Math.min(1, heat) * 0.12; ctx.fillStyle = P.orange; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
     ctx.fillStyle = P.line;
-    for (let y = 12; y < h; y += 26) for (let x = (y / 26) % 2 ? 6 : 19; x < w; x += 26) ctx.fillRect(x, y, 2, 4);
+    if (false) for (let y = 12; y < h; y += 26) for (let x = (y / 26) % 2 ? 6 : 19; x < w; x += 26) ctx.fillRect(x, y, 2, 4);
 
     if (lake) {
       ctx.fillStyle = P.pink; ctx.globalAlpha = 0.5;
@@ -294,7 +297,7 @@
 
     fx.draw(ctx); fl.draw(ctx);
     S.tex.grain(ctx, w, h, P.ink, P.dark ? 0.5 : 1);
-    if (flash > 0) { ctx.globalAlpha = flash * 1.6; ctx.fillStyle = P.paper; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
+    if (flash > 0) { ctx.globalAlpha = flash * 1.6; S.tex.paperBg(ctx, w, h, P); ctx.globalAlpha = 1; }
 
     if (state === 'play' || state === 'between') {
       const k = 1 - timeLeft / total;
@@ -317,15 +320,17 @@
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 2 ? 1 - (banner.t - 2) / 0.4 : 1;
       ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, h * 0.32); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
-      ctx.font = '600 italic 32px "Fraunces", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
+      ctx.font = '400 32px "Young Serif", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
       ctx.restore(); ctx.textAlign = 'left';
     }
   }
 
+  S.dbg.next = () => { if (state === 'play') for (const f of fields) if (!f.bloom) bloom(f); };
   buildLevel();
   ov.show('Wolkenhirte',
     'Du bist der Wind. Wolken <b>weichen deinem Zeiger aus</b>, so treibst du sie über die trockenen Felder, bis dort alles blüht. Leere Wolken tanken am See.<ul><li>Reis braucht mehr Wasser, Obstwiesen trocknen schnell aus</li><li>Gewitterwolken schlagen Blitze in Felder, halte sie fern</li><li>Bei Hitzewellen trocknet alles dreimal so schnell</li></ul>',
     'Wehen', startGame);
+  diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });
 })();
