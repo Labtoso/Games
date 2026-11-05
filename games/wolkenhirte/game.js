@@ -1,4 +1,4 @@
-/* Wolkenhirte: du bist der Wind, die Wolken sind deine Herde */
+/* Rainmaker: you are the wind, the clouds are your herd */
 (() => {
   const S = Shell, E = S.ease, snd = S.sound;
   const cv = document.getElementById('c');
@@ -7,21 +7,28 @@
   const st = S.stage(cv, () => { if (state !== 'play') buildLevel(); });
   const ctx = st.ctx;
   const hud = S.hud('wolkenhirte');
+  const T = {
+    title: 'Rainmaker', play: 'Blow', retry: 'New day', record: 'New best', lost: 'Sundown',
+    intro: 'Clouds drift away from your pointer. Push them over dry fields until they bloom. Empty clouds refill over the lake.',
+    over: (d, s, b) => `Day <b>${d}</b>, <b>${s}</b> points. Best: <b>${b}</b>.`,
+    day: (d) => `Day ${d}`, heat: 'Heatwave', bolt: 'Lightning', boltLoss: 'Lightning −5', bonus: (n) => `Time bonus +${n}`,
+    hud: (d, s, a, b) => `Day ${d} · ${s}s · ${a}/${b} fields`, crops: { wheat: 'Wheat', rice: 'Rice', orchard: 'Orchard' },
+  };
   const ov = S.overlay();
   const fx = S.particles();
   const fl = S.floaters();
 
   const CROPS = {
-    wheat: { name: 'Weizen', fill: 1, dry: 1, pts: 10 },
-    rice: { name: 'Reis', fill: 0.6, dry: 0.7, pts: 15 },
-    orchard: { name: 'Obstwiese', fill: 0.85, dry: 1.6, pts: 20 },
+    wheat: { name: 'Wheat', fill: 1, dry: 1, pts: 10 },
+    rice: { name: 'Rice', fill: 0.6, dry: 0.7, pts: 15 },
+    orchard: { name: 'Orchard', fill: 0.85, dry: 1.6, pts: 20 },
   };
 
   let clouds = [], storms = [], fields = [], lake = null, drops = [], bolts = [], level = 1, score = 0, timeLeft = 0, total = 1, state = 'menu', t = 0;
   let heat = 0, heatNext = 0, banner = null, rainSnd = 0, flash = 0;
   const ptr = S.pointer(cv);
   const diff = S.difficulty('wolkenhirte');
-  const D = () => diff.pick({ leicht: { time: 1.3, dry: 0.7 }, normal: { time: 1, dry: 1 }, schwer: { time: 0.8, dry: 1.3 } });
+  const D = () => diff.pick({ easy: { time: 1.3, dry: 0.7 }, normal: { time: 1, dry: 1 }, hard: { time: 0.8, dry: 1.3 } });
 
   function rectsOverlap(a, b, m) { return a.x < b.x + b.w + m && a.x + a.w + m > b.x && a.y < b.y + b.h + m && a.y + a.h + m > b.y; }
 
@@ -69,7 +76,7 @@
 
   const cloudR = (c) => (c.storm ? 34 : 20 + c.water * 18);
 
-  function startGame() { level = S.debug.on ? Math.max(1, S.debug.start) : 1; score = 0; hud.score(0); fx.clear(); fl.clear(); buildLevel(); state = 'play'; banner = { text: 'Tag 1', t: 0 }; }
+  function startGame() { level = S.debug.on ? Math.max(1, S.debug.start) : 1; score = 0; hud.score(0); fx.clear(); fl.clear(); buildLevel(); state = 'play'; banner = { text: T.day(1), t: 0 }; }
 
   function moveCloud(c, dt, w, h, all) {
     if (ptr.inside && state !== 'menu') {
@@ -101,7 +108,7 @@
     // Hitzewelle
     if (state === 'play') {
       heatNext -= dt;
-      if (heatNext <= 0 && heat <= 0) { heat = 8; heatNext = S.rand(18, 28); banner = { text: 'Hitzewelle!', t: 0 }; snd.tone(180, 0.8, 'sawtooth', 0.06, 0.6); }
+      if (heatNext <= 0 && heat <= 0) { heat = 8; heatNext = S.rand(18, 28); banner = { text: T.heat, t: 0 }; snd.tone(180, 0.8, 'sawtooth', 0.06, 0.6); }
       if (heat > 0) heat -= dt;
     }
     const all = clouds.concat(storms);
@@ -142,8 +149,8 @@
         flash = 0.25;
         snd.noise(0.8, 0.35, 160); snd.noise(0.15, 0.3, 2400);
         if (f) {
-          if (f.bloom) { f.bloom = false; f.m = 0.55; f.flowers = []; score = Math.max(0, score - 5); hud.score(score); fl.add(tx, ty - 10, 'Blitz! −5', P.ink); }
-          else { f.m = Math.max(0, f.m - 0.4); fl.add(tx, ty - 10, 'Blitz!', P.ink); }
+          if (f.bloom) { f.bloom = false; f.m = 0.55; f.flowers = []; score = Math.max(0, score - 5); hud.score(score); fl.add(tx, ty - 10, T.boltLoss, P.ink); }
+          else { f.m = Math.max(0, f.m - 0.4); fl.add(tx, ty - 10, T.bolt, P.ink); }
           f.burnt = 1;
           fx.burst(tx, ty, P.orange, 18, 180, 0.6, 3);
         }
@@ -161,16 +168,16 @@
       if (fields.every((f) => f.bloom)) {
         const bonus = Math.floor(timeLeft) * 2;
         score += bonus; hud.score(score); hud.best(score);
-        fl.add(st.w / 2, 90, `Zeitbonus +${bonus}`, P.ink);
+        fl.add(st.w / 2, 90, T.bonus(bonus), P.ink);
         snd.chord([523, 659, 784, 1046], 0.5, 'triangle', 0.2);
         state = 'between';
-        setTimeout(() => { level++; buildLevel(); state = 'play'; banner = { text: `Tag ${level}`, t: 0 }; }, 1600);
+        setTimeout(() => { level++; buildLevel(); state = 'play'; banner = { text: T.day(level), t: 0 }; }, 1600);
       } else if (timeLeft <= 0) {
         timeLeft = 0; state = 'over';
         const rec = hud.best(score);
         snd.tone(330, 0.8, 'sine', 0.15, 0.5);
-        setTimeout(() => ov.show(rec && score > 0 ? 'Neuer Rekord!' : 'Die Sonne ist unter',
-          `Tag <b>${level}</b>, <b>${score}</b> Punkte. Rekord: <b>${hud.bestValue}</b>.`, 'Neuer Tag', startGame), 500);
+        setTimeout(() => ov.show(rec && score > 0 ? T.record : T.lost,
+          T.over(level, score, hud.bestValue), T.retry, startGame), 500);
         setTimeout(() => diff.mount(ov), 510);
       }
     }
@@ -214,7 +221,7 @@
     if (f.burnt > 0) { ctx.globalAlpha = f.burnt * 0.6; tx.halftoneRect(ctx, f.x, f.y, f.w, f.h, P.ink, 0.7, 5); ctx.globalAlpha = 1; }
     ctx.strokeStyle = P.ink; ctx.lineWidth = 2; ctx.strokeRect(f.x, f.y, f.w, f.h);
     if (!f.bloom) {
-      ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'left';
+      ctx.font = '600 11px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'left';
       const label = `${CROPS[f.crop].name} ${Math.floor(f.m * 100)}%`;
       const lw = ctx.measureText(label).width + 8;
       ctx.fillStyle = P.card; ctx.fillRect(f.x + 3, f.y + 3, lw, 15);
@@ -310,8 +317,8 @@
       if (heat > 0) { ctx.strokeStyle = P.orange; ctx.lineWidth = 2; for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + t; ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * (sr + 3), sy + Math.sin(a) * (sr + 3)); ctx.lineTo(sx + Math.cos(a) * (sr + 8), sy + Math.sin(a) * (sr + 8)); ctx.stroke(); } }
       S.riso(ctx, () => { ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); }, P.pink, timeLeft < 10 || heat > 0 ? P.orange : P.yellow, 2, 2);
       ctx.strokeStyle = P.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.stroke();
-      ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
-      const label = `Tag ${level} · ${Math.ceil(timeLeft)} s · ${fields.filter((f) => f.bloom).length}/${fields.length} Felder`;
+      ctx.font = '600 12px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'center';
+      const label = T.hud(level, Math.ceil(timeLeft), fields.filter((f) => f.bloom).length, fields.length);
       const lw = ctx.measureText(label).width + 20;
       ctx.fillStyle = P.card; ctx.fillRect(ax - lw / 2, h - 34, lw, 22); ctx.strokeStyle = P.ink; ctx.lineWidth = 1.5; ctx.strokeRect(ax - lw / 2, h - 34, lw, 22);
       ctx.fillStyle = P.ink; ctx.fillText(label, ax, h - 19);
@@ -320,16 +327,14 @@
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 2 ? 1 - (banner.t - 2) / 0.4 : 1;
       ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, h * 0.32); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
-      ctx.font = '400 32px "Young Serif", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
+      ctx.font = '700 32px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
       ctx.restore(); ctx.textAlign = 'left';
     }
   }
 
   S.dbg.next = () => { if (state === 'play') for (const f of fields) if (!f.bloom) bloom(f); };
   buildLevel();
-  ov.show('Wolkenhirte',
-    'Du bist der Wind. Wolken <b>weichen deinem Zeiger aus</b>, so treibst du sie über die trockenen Felder, bis dort alles blüht. Leere Wolken tanken am See.<ul><li>Reis braucht mehr Wasser, Obstwiesen trocknen schnell aus</li><li>Gewitterwolken schlagen Blitze in Felder, halte sie fern</li><li>Bei Hitzewellen trocknet alles dreimal so schnell</li></ul>',
-    'Wehen', startGame);
+  ov.show(T.title, T.intro, T.play, startGame);
   diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });

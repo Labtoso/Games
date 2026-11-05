@@ -1,4 +1,4 @@
-/* Lichtweg: Spiegel drehen, bis der Strahl alle Kristalle in der richtigen Farbe trifft */
+/* Prism: turn mirrors until the beam hits every crystal in its own colour */
 (() => {
   const S = Shell, E = S.ease, snd = S.sound;
   const cv = document.getElementById('c');
@@ -7,6 +7,22 @@
   const st = S.stage(cv, () => layout());
   const ctx = st.ctx;
   const hud = S.hud('lichtweg');
+  const diff = S.difficulty('lichtweg');
+  const DF = () => diff.pick({ easy: { decoy: 0.5, slack: 5 }, normal: { decoy: 1, slack: 3 }, hard: { decoy: 1.6, slack: 1 } });
+  const T = {
+    title: 'Prism', play: 'Play', resume: 'Continue', ok: 'Got it', allLit: 'All lit',
+    intro: 'Tap mirrors to turn them until every crystal glows. Fewer moves earn three stars.',
+    cont: (l) => ` You continue at <b>level ${l}</b>.`,
+    undo: 'Undo', hint: 'Hint', reset: 'Restart', level: (l) => `Level ${l}`,
+    status: (a, b, m, p) => `${a}/${b} ◆   ${m} ${m === 1 ? 'move' : 'moves'} · par ${p}`,
+    pts: (p, h) => `+${p} points${h ? ' · hint used' : ''}`,
+    news: {
+      4: ['New pieces', '<b>Screwed</b> mirrors stay put. <b>Stones</b> swallow light.'],
+      6: ['Splitters', 'Half-silvered glass sends the beam <b>straight on and sideways</b> at once. Splitters turn too.'],
+      9: ['Filters', 'Coloured glass <b>recolours the beam</b>. A crystal only lights up in its own colour.'],
+      12: ['Portals', 'Light entering one portal <b>leaves the other</b> in the same direction.'],
+    },
+  };
   const ov = S.overlay();
   const fx = S.particles();
   const fl = S.floaters();
@@ -16,7 +32,7 @@
      {k:'filter', c}  {k:'portal', to}  {k:'stone'}  {k:'target', c, glow} */
   const COLS = ['p', 'b', 'g'];
   const colorOf = (c) => (c === 'b' ? P.blue : c === 'g' ? P.green : P.pink);
-  const NAMES = { p: 'rosa', b: 'blau', g: 'grün' };
+  const NAMES = { p: 'pink', b: 'blue', g: 'green' };
 
   let n = 5, grid = [], initial = [], src = null;
   let level = S.store.get('lichtweg:level', 1), score = S.store.get('lichtweg:score', 0);
@@ -175,7 +191,7 @@
     const off = []; for (let i = 0; i < n * n; i++) if (!sol.passC.has(i) && !g[i]) off.push(i);
     S.shuffle(off);
     let oi = 0;
-    const decoys = Math.min(off.length, 1 + Math.floor(level * 0.6));
+    const decoys = Math.min(off.length, Math.round((1 + Math.floor(level * 0.6)) * DF().decoy));
     for (let i = 0; i < decoys; i++) { g[off[oi++]] = { k: Math.random() < 0.2 && R.splits ? 'split' : 'mirror', m: Math.random() < 0.5 ? '/' : '\\' }; }
     if (R.stones) { const sc = Math.min(off.length - oi, S.randInt(1, 1 + Math.floor(level / 4))); for (let i = 0; i < sc; i++) g[off[oi++]] = { k: 'stone' }; }
 
@@ -207,18 +223,13 @@
     ox = Math.floor((st.w - cs * n) / 2);
     oy = Math.floor(top + (st.h - top - bottom - cs * n) / 2);
     const bw = Math.min(118, (st.w - 40) / 3 - 8), bh = 34, by = oy + cs * n + 26;
-    const labels = [['undo', 'Zurück'], ['hint', 'Tipp'], ['reset', 'Neu']];
+    const labels = [['undo', T.undo], ['hint', T.hint], ['reset', T.reset]];
     const total = labels.length * bw + (labels.length - 1) * 10;
     buttons = labels.map(([id, label], i) => ({ id, label, x: st.w / 2 - total / 2 + i * (bw + 10), y: by, w: bw, h: bh }));
   }
 
   /* ---------- Ablauf ---------- */
-  const INTRO = {
-    4: ['Neue Teile', 'Spiegel mit <b>Schrauben</b> lassen sich nicht drehen. <b>Steine</b> schlucken das Licht.'],
-    6: ['Strahlteiler', 'Halbdurchlässiges Glas: Der Strahl läuft <b>geradeaus weiter und wird zugleich abgelenkt</b>. Auch Teiler lassen sich drehen.'],
-    9: ['Farbfilter', 'Farbiges Glas <b>färbt den Strahl um</b>. Jeder Kristall leuchtet nur, wenn ihn Licht in seiner eigenen Farbe trifft.'],
-    12: ['Portale', 'Licht, das in ein Portal fällt, kommt <b>am anderen Portal</b> in derselben Richtung wieder heraus.'],
-  };
+  const INTRO = T.news;
 
   function beginLevel(showIntro = true) {
     generate(); layout();
@@ -226,7 +237,7 @@
     tr = trace(grid); grown = 0;
     phase = 'in'; phaseT = 0;
     S.store.set('lichtweg:level', level);
-    if (showIntro && INTRO[level]) { phase = 'paused'; ov.show(INTRO[level][0], INTRO[level][1], 'Verstanden', () => { phase = 'in'; phaseT = 0; }); }
+    if (showIntro && INTRO[level]) { phase = 'paused'; ov.show(INTRO[level][0], INTRO[level][1], T.ok, () => { phase = 'in'; phaseT = 0; }); }
   }
 
   function retrace(fromId) {
@@ -280,7 +291,7 @@
 
   function win() {
     phase = 'win'; phaseT = 0;
-    let stars = moves <= par ? 3 : moves <= par + 3 ? 2 : 1;
+    let stars = moves <= par ? 3 : moves <= par + DF().slack ? 2 : 1;
     if (hintUsed) stars = Math.min(stars, 2);
     const pts = [0, 20, 35, 50][stars];
     score += pts; hud.score(score); hud.best(score);
@@ -337,7 +348,7 @@
       // Funken an Umlenkpunkten
       for (const b of tr.bounces) {
         if (b.d <= grown && Math.random() < dt * 5) {
-          fx.list.push({ x: ox + b.x * cs + cs / 2, y: oy + b.y * cs + cs / 2, vx: S.rand(-30, 30), vy: S.rand(-50, -10), life: 0.5, max: 0.5, color: colorOf(b.c), size: 2 });
+          fx.spark(ox + b.x * cs + cs / 2, oy + b.y * cs + cs / 2, S.rand(-30, 30), S.rand(-50, -10), 0.5, colorOf(b.c), 2);
         }
       }
       if (phase === 'play' && grown >= tr.maxD - 0.001 && isSolvedBy(grid, tr) && litSet.size === grid.filter((c) => c && c.k === 'target').length) win();
@@ -528,14 +539,14 @@
 
     // Kopfzeile
     const targets = grid.filter((c) => c && c.k === 'target');
-    ctx.fillStyle = P.ink; ctx.font = '600 13px "IBM Plex Mono", monospace'; ctx.textBaseline = 'alphabetic';
-    ctx.textAlign = 'left'; ctx.fillText(`Level ${level}`, ox, oy - 16);
+    ctx.fillStyle = P.ink; ctx.font = '600 13px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left'; ctx.fillText(T.level(level), ox, oy - 16);
     ctx.textAlign = 'right';
-    ctx.fillText(`${litSet.size}/${targets.length} ◆   ${moves} ${moves === 1 ? 'Zug' : 'Züge'} · Ziel ${par}`, ox + cs * n, oy - 16);
+    ctx.fillText(T.status(litSet.size, targets.length, moves, par), ox + cs * n, oy - 16);
     ctx.textAlign = 'left';
 
     // Knöpfe
-    ctx.font = '600 13px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '600 13px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const b of buttons) {
       const p = b.press ? 2 : 0;
       const off = (b.id === 'undo' && !history.length) || phase !== 'play';
@@ -560,7 +571,7 @@
       ctx.fillStyle = P.card; ctx.beginPath(); ctx.roundRect(-cw / 2, -chh / 2, cw, chh, 8); ctx.fill();
       ctx.strokeStyle = P.ink; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = P.ink; ctx.textAlign = 'center';
-      ctx.font = '400 26px "Young Serif", Georgia, serif'; ctx.fillText('Alles im Licht', 0, -26);
+      ctx.font = '700 26px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif'; ctx.fillText(T.allLit, 0, -26);
       for (let i = 0; i < 3; i++) {
         const sk = E.outElastic(S.clamp((phaseT - 0.35 - i * 0.18) / 0.6, 0, 1));
         const on = i < winInfo.stars;
@@ -569,8 +580,8 @@
         ctx.restore();
         if (on && phaseT - 0.35 - i * 0.18 > 0 && phaseT - 0.35 - i * 0.18 < 0.03) snd.tone(880 + i * 220, 0.18, 'triangle', 0.2);
       }
-      ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.fillStyle = P.soft;
-      ctx.fillText(`+${winInfo.pts} Punkte${hintUsed ? ' · mit Tipp' : ''}`, 0, 54);
+      ctx.font = '600 12px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.fillStyle = P.soft;
+      ctx.fillText(T.pts(winInfo.pts, hintUsed), 0, 54);
       ctx.restore(); ctx.textAlign = 'left';
     }
   }
@@ -586,10 +597,10 @@
   hud.score(score);
   beginLevel(false);
   phase = 'paused';
-  const cont = level > 1 ? `Du machst bei <b>Level ${level}</b> weiter.` : 'Neue Teile kommen nach und nach dazu.';
-  ov.show('Lichtweg',
-    `Eine Lampe wirft einen Strahl über das Brett. <b>Tippe Spiegel an</b>, um sie zu kippen, bis jeder Kristall leuchtet. Wer mit wenigen Zügen auskommt, bekommt drei Sterne. ${cont}<br><br><kbd>Z</kbd> zurück · <kbd>H</kbd> Tipp · <kbd>R</kbd> neu`,
-    level > 1 ? 'Weiterspielen' : 'Los', () => { if (INTRO[level] && level > 1) { ov.show(INTRO[level][0], INTRO[level][1], 'Verstanden', () => { phase = 'in'; phaseT = 0; }); } else { phase = 'in'; phaseT = 0; } });
+  const cont = level > 1 ? T.cont(level) : '';
+  ov.show(T.title, T.intro + cont,
+    level > 1 ? T.resume : T.play, () => { if (INTRO[level] && level > 1) { ov.show(INTRO[level][0], INTRO[level][1], T.ok, () => { phase = 'in'; phaseT = 0; }); } else { phase = 'in'; phaseT = 0; } });
+  diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });
 })();

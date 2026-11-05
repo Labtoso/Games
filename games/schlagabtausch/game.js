@@ -1,4 +1,4 @@
-/* Schlagabtausch: Ballduell für einen oder zwei Spieler */
+/* Rally: paddle duel for one or two players */
 (() => {
   const S = Shell, E = S.ease, snd = S.sound;
   const cv = document.getElementById('c');
@@ -6,15 +6,28 @@
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { P = S.palette(); });
   const st = S.stage(cv, () => fitCourt());
   const ctx = st.ctx;
+  const T = {
+    title: 'Rally', play: 'Play', pause: 'Paused', resume: 'Resume',
+    intro: 'First to seven wins. The ball speeds up with every hit, and a moving paddle adds spin.',
+    won: 'You win', lost: 'You lose', left: 'Left wins', right: 'Right wins',
+    result: (a, b, r) => `<b>${a} : ${b}</b>, longest rally <b>${r}</b>.`, rally: (n) => `${n} hits`,
+    vsAi: (l) => `Against the computer · ${l}`, duo: 'Two players', you: 'You · W/S or ↑/↓', leftKeys: 'Left · W/S', cpu: (l) => `Computer · ${l}`, rightKeys: 'Right · ↑/↓',
+    big: 'Big paddle', multi: 'Second ball', slow: 'Slow motion', serve: (d) => `Serve ${d}`,
+    mode: 'Mode', one: '1 player', two: '2 players', extras: 'Power-ups', on: 'On', off: 'Off',
+  };
+  /* The computer's skill is the game's difficulty. Old saves stored it as leicht/mittel/schwer. */
+  const OLDLV = { leicht: 'easy', mittel: 'normal', schwer: 'hard' };
+  if (S.store.get('schlagabtausch:diff', null) == null && S.store.get('schlagabtausch:level', null)) S.store.set('schlagabtausch:diff', OLDLV[S.store.get('schlagabtausch:level')] || 'normal');
+  const diff = S.difficulty('schlagabtausch');
   const hud = S.hud('schlagabtausch');
   const ov = S.overlay();
   const fx = S.particles();
   const fl = S.floaters();
 
   const WIN = 7;
-  let mode = S.store.get('schlagabtausch:mode', 'ai'), level = S.store.get('schlagabtausch:level', 'mittel'), extras = S.store.get('schlagabtausch:extras', true);
+  let mode = S.store.get('schlagabtausch:mode', 'ai'), level = diff.value, extras = S.store.get('schlagabtausch:extras', true);
   let court = { x: 0, y: 0, w: 1, h: 1 }, L, R, balls = [], items = [], state = 'menu', t = 0, shake = 0, serveT = 0, server = 1, rally = 0, bestRally = 0, goalFlash = { side: 0, t: 0 }, itemT = 6, banner = null;
-  const AI = { leicht: { speed: 0.55, react: 0.28, err: 60 }, mittel: { speed: 0.8, react: 0.16, err: 30 }, schwer: { speed: 1.05, react: 0.07, err: 10 } };
+  const AI = { easy: { speed: 0.55, react: 0.28, err: 60 }, normal: { speed: 0.8, react: 0.16, err: 30 }, hard: { speed: 1.05, react: 0.07, err: 10 } };
 
   function fitCourt() {
     const pad = Math.min(24, st.w * 0.04);
@@ -32,16 +45,16 @@
   const baseSpeed = () => Math.max(300, court.w * 0.42);
 
   function startMatch() {
-    S.store.set('schlagabtausch:mode', mode); S.store.set('schlagabtausch:level', level); S.store.set('schlagabtausch:extras', extras);
+    S.store.set('schlagabtausch:mode', mode); diff.set(level); S.store.set('schlagabtausch:extras', extras);
     fitCourt();
     L = paddle(court.x + 22); R = paddle(court.x + court.w - 22);
     balls = []; items = []; rally = 0; bestRally = 0; itemT = 6; fx.clear(); fl.clear();
     server = Math.random() < 0.5 ? -1 : 1; serveT = 1.2; state = 'play';
     hud.score('0 : 0');
-    banner = { text: mode === 'ai' ? `Gegen den Computer · ${level}` : 'Zwei Spieler', t: 0 };
+    banner = { text: mode === 'ai' ? T.vsAi(diff.label) : T.duo, t: 0 };
   }
 
-  const keys = S.keys((k) => { if (k === 'Escape' && state === 'play') { state = 'pause'; ov.show('Pause', 'Kurz durchatmen.', 'Weiter', () => { state = 'play'; }); } });
+  const keys = S.keys((k) => { if (k === 'Escape' && state === 'play') { state = 'pause'; ov.show(T.pause, '', T.resume, () => { state = 'play'; }); } });
   const ptr = S.pointer(cv);
   const touches = new Map();
   cv.addEventListener('pointerdown', (e) => { touches.set(e.pointerId, e); });
@@ -97,10 +110,10 @@
         b.spin = S.clamp(p.vy / 900, -1.2, 1.2);
         b.x = px - side * b.r;
         rally++; bestRally = Math.max(bestRally, rally);
-        shake = Math.min(0.25, 0.06 + rally * 0.005);
+        shake = Math.min(0.25, 0.06 + rally * 0.005) * S.shakeScale;
         fx.burst(b.x, b.y, side < 0 ? P.pink : P.blue, 10, 160, 0.4, 3);
         snd.tone(side < 0 ? 330 : 392, 0.07, 'square', 0.2, 1 + Math.abs(off) * 0.3);
-        if (rally > 0 && rally % 10 === 0) { fl.add(court.x + court.w / 2, court.y + 40, `${rally} Ballwechsel!`, P.ink); snd.chord([523, 659], 0.2, 'triangle', 0.15); }
+        if (rally > 0 && rally % 10 === 0) { fl.add(court.x + court.w / 2, court.y + 40, T.rally(rally), P.ink); snd.chord([523, 659], 0.2, 'triangle', 0.15); }
       }
     }
   }
@@ -109,15 +122,15 @@
     const scorer = side < 0 ? R : L;
     scorer.score++;
     goalFlash = { side, t: 0.6 };
-    shake = 0.4; rally = 0;
+    shake = 0.4 * S.shakeScale; rally = 0; S.hitstop(70);
     snd.noise(0.4, 0.3, 600); snd.chord(side < 0 ? [392, 523] : [330, 440], 0.3, 'triangle', 0.2);
     hud.score(`${L.score} : ${R.score}`);
     if (scorer.score >= WIN) {
       state = 'over';
       const won = scorer === L;
-      if (mode === 'ai' && won) { const pts = { leicht: 1, mittel: 2, schwer: 3 }[level]; const wins = S.store.get('schlagabtausch:wins', 0) + pts; S.store.set('schlagabtausch:wins', wins); hud.best(wins); }
-      const title = mode === 'ai' ? (won ? 'Gewonnen!' : 'Verloren') : (won ? 'Links gewinnt!' : 'Rechts gewinnt!');
-      setTimeout(() => showMenu(title, `<b>${L.score} : ${R.score}</b>, längster Ballwechsel: <b>${bestRally}</b>.`), 700);
+      if (mode === 'ai' && won) { hud.best(hud.bestValue + 1); }
+      const title = mode === 'ai' ? (won ? T.won : T.lost) : (won ? T.left : T.right);
+      setTimeout(() => showMenu(title, T.result(L.score, R.score, bestRally)), 700);
       return;
     }
     server = side < 0 ? 1 : -1; serveT = 1;
@@ -162,9 +175,9 @@
           if (!it.got && Math.hypot(it.x - b.x, it.y - b.y) < 22 + b.r) {
             it.got = true;
             const owner = b.vx > 0 ? L : R;
-            if (it.kind === 'big') { owner.big = 8; fl.add(it.x, it.y - 14, 'Großer Schläger', P.ink); }
-            else if (it.kind === 'multi') { const nb = newBall(b.vx > 0 ? 1 : -1); nb.x = b.x; nb.y = b.y; nb.vy = -b.vy || 120; nb.vx = b.vx; balls.push(nb); fl.add(it.x, it.y - 14, 'Zweiter Ball', P.ink); }
-            else { for (const bb of balls) bb.slow = 4; fl.add(it.x, it.y - 14, 'Zeitlupe', P.ink); }
+            if (it.kind === 'big') { owner.big = 8; fl.add(it.x, it.y - 14, T.big, P.ink); }
+            else if (it.kind === 'multi') { const nb = newBall(b.vx > 0 ? 1 : -1); nb.x = b.x; nb.y = b.y; nb.vy = -b.vy || 120; nb.vx = b.vx; balls.push(nb); fl.add(it.x, it.y - 14, T.multi, P.ink); }
+            else { for (const bb of balls) bb.slow = 4; fl.add(it.x, it.y - 14, T.slow, P.ink); }
             fx.burst(it.x, it.y, P.yellow, 16, 160, 0.6, 3);
             snd.chord([659, 880], 0.18, 'triangle', 0.18);
           }
@@ -220,7 +233,7 @@
 
     // Stand in großen Ziffern
     if (L) {
-      ctx.font = `400 ${Math.min(120, c.h * 0.28)}px "Young Serif", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `400 ${Math.min(120, c.h * 0.28)}px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.globalAlpha = 0.16; ctx.fillStyle = P.ink;
       ctx.fillText(String(L.score), c.x + c.w * 0.25, c.y + c.h / 2);
       ctx.fillText(String(R.score), c.x + c.w * 0.75, c.y + c.h / 2);
@@ -253,8 +266,8 @@
       ctx.strokeStyle = P.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.stroke();
     }
     if (state === 'play' && serveT > 0 && L) {
-      ctx.fillStyle = P.ink; ctx.font = '600 13px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
-      ctx.fillText(`Aufschlag ${server < 0 ? '←' : '→'}`, c.x + c.w / 2, c.y + c.h / 2 + Math.min(60, c.h * 0.14) + 24);
+      ctx.fillStyle = P.ink; ctx.font = '600 13px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'center';
+      ctx.fillText(T.serve(server < 0 ? '←' : '→'), c.x + c.w / 2, c.y + c.h / 2 + Math.min(60, c.h * 0.14) + 24);
     }
     for (const b of balls) S.dbg.circle(ctx, b.x, b.y, b.r);
     if (L) for (const p of [L, R]) { const ph = p.h * (p.big > 0 ? 1.5 : 1); S.dbg.rect(ctx, p.x - p.w / 2, p.y - ph / 2, p.w, ph, '#f0f'); }
@@ -263,29 +276,29 @@
     S.tex.grain(ctx, w, h, P.ink, P.dark ? 0.5 : 1);
 
     if (L) {
-      ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.fillStyle = P.soft; ctx.textAlign = 'left';
-      ctx.fillText(mode === 'ai' ? 'Du · W/S oder ↑/↓' : 'Links · W/S', c.x + 8, c.y - 6);
-      ctx.textAlign = 'right'; ctx.fillText(mode === 'ai' ? `Computer · ${level}` : 'Rechts · ↑/↓', c.x + c.w - 8, c.y - 6);
+      ctx.font = '600 12px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.fillStyle = P.soft; ctx.textAlign = 'left';
+      ctx.fillText(mode === 'ai' ? T.you : T.leftKeys, c.x + 8, c.y - 6);
+      ctx.textAlign = 'right'; ctx.fillText(mode === 'ai' ? T.cpu(diff.label) : T.rightKeys, c.x + c.w - 8, c.y - 6);
       ctx.textAlign = 'left';
     }
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 1.6 ? 1 - (banner.t - 1.6) / 0.4 : 1;
       ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, court.y + court.h * 0.22);
-      ctx.font = '400 28px "Young Serif", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
+      ctx.font = '700 28px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
       ctx.restore();
     }
   }
 
   function showMenu(title, text) {
-    ov.show(title, text + ' Wer zuerst sieben Punkte hat, gewinnt. Der Ball wird mit jedem Treffer schneller, und wer den Schläger beim Treffen bewegt, gibt ihm Drall.', 'Spiel starten', startMatch);
+    ov.show(title, text, T.play, startMatch);
     const box = ov.extra('');
     const render = () => {
       const opt = (group, val, label, cur) => `<button data-g="${group}" data-v="${val}" ${cur === val ? 'aria-pressed="true"' : ''}>${label}</button>`;
-      box.innerHTML = `<div class="choice"><span>Modus</span>${opt('mode', 'ai', '1 Spieler', mode)}${opt('mode', 'duo', '2 Spieler', mode)}</div>` +
-        (mode === 'ai' ? `<div class="choice"><span>Gegner</span>${opt('level', 'leicht', 'Leicht', level)}${opt('level', 'mittel', 'Mittel', level)}${opt('level', 'schwer', 'Schwer', level)}</div>` : '') +
-        `<div class="choice"><span>Extras</span>${opt('extras', 'on', 'An', extras ? 'on' : 'off')}${opt('extras', 'off', 'Aus', extras ? 'on' : 'off')}</div>`;
+      box.innerHTML = `<div class="choice"><span>${T.mode}</span>${opt('mode', 'ai', T.one, mode)}${opt('mode', 'duo', T.two, mode)}</div>` +
+        (mode === 'ai' ? `<div class="choice">${opt('level', 'easy', 'Easy', level)}${opt('level', 'normal', 'Normal', level)}${opt('level', 'hard', 'Hard', level)}</div>` : '') +
+        `<div class="choice"><span>${T.extras}</span>${opt('extras', 'on', T.on, extras ? 'on' : 'off')}${opt('extras', 'off', T.off, extras ? 'on' : 'off')}</div>`;
       box.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
-        if (b.dataset.g === 'mode') mode = b.dataset.v; else if (b.dataset.g === 'level') level = b.dataset.v; else extras = b.dataset.v === 'on';
+        if (b.dataset.g === 'mode') mode = b.dataset.v; else if (b.dataset.g === 'level') { level = b.dataset.v; diff.set(level); } else extras = b.dataset.v === 'on';
         snd.tone(600, 0.05, 'triangle', 0.15); render();
       }));
     };
@@ -295,8 +308,7 @@
   S.dbg.next = () => { if (state === 'play' && L) { balls = []; goal(1); } };
   fitCourt();
   L = paddle(court.x + 22); R = paddle(court.x + court.w - 22);
-  hud.best(0);
-  showMenu('Schlagabtausch', 'Allein gegen den Computer oder zu zweit an einer Tastatur: links <kbd>W</kbd>/<kbd>S</kbd>, rechts <kbd>↑</kbd>/<kbd>↓</kbd>. Am Handy steuert jede Bildschirmhälfte ihren Schläger.');
+  showMenu(T.title, T.intro);
 
   S.loop((dt) => { update(dt); draw(); });
 })();

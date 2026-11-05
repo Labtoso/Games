@@ -1,4 +1,4 @@
-/* Weichenwerk: Pakete über Weichen in die richtige Rutsche lenken */
+/* Switchyard: route parcels through switches into the matching chute */
 (() => {
   const S = Shell, E = S.ease, snd = S.sound;
   const cv = document.getElementById('c');
@@ -7,6 +7,13 @@
   const st = S.stage(cv, () => layout());
   const ctx = st.ctx;
   const hud = S.hud('weichenwerk');
+  const T = {
+    title: 'Switchyard', play: 'Start belt', retry: 'Next shift', record: 'New best', lost: 'Shift over',
+    intro: 'Send every parcel to the chute with the same colour and shape. Gold fits anywhere. Tap bombs before they land.',
+    over: (s, n, up, b) => `<b>${s}</b> points, <b>${n}</b> parcels sorted${up ? ', yard expanded' : ''}. Best: <b>${b}</b>.`,
+    begin: 'Shift starts', boom: 'Boom', combo: (c) => `Combo ×${c}`, expand: 'Expanded to eight chutes', defused: 'defused +2',
+    strikes: 'MISSES', stage: (n) => `Stage ${n}`, swap: 'Heads up, chutes are swapping',
+  };
   const ov = S.overlay();
   const fx = S.particles();
   const fl = S.floaters();
@@ -19,7 +26,7 @@
 
   const colors = () => [P.pink, P.blue, P.yellow, P.green];
   const diff = S.difficulty('weichenwerk');
-  const DF = () => diff.pick({ leicht: { sp: 0.8, lives: 5 }, normal: { sp: 1, lives: 3 }, schwer: { sp: 1.2, lives: 2 } });
+  const DF = () => diff.pick({ easy: { sp: 0.8, lives: 5 }, normal: { sp: 1, lives: 3 }, hard: { sp: 1.2, lives: 2 } });
   const mult = () => Math.min(4, 1 + Math.floor(streak / 5));
 
   function setDepth(d) {
@@ -70,7 +77,7 @@
   function startGame() {
     score = 0; strikes = 0; streak = 0; sorted = 0; shuffleAt = 15; parcels = []; stage = 1;
     setDepth(2);
-    spawnT = 0.6; hud.score(0); fx.clear(); fl.clear(); state = 'play'; banner = { text: 'Schicht beginnt', t: 0 };
+    spawnT = 0.6; hud.score(0); fx.clear(); fl.clear(); state = 'play'; banner = { text: T.begin, t: 0 };
     if (S.debug.on && S.debug.start > 1) upgradeStage();
   }
 
@@ -99,9 +106,9 @@
       const li = node - NS, n = leafPos[li];
       const col = chuteColor[li];
       if (p.kind === 'bomb') {
-        strikes++; shake = 0.5; flash[li] = -0.6; streak = 0;
+        strikes++; shake = 0.5 * S.shakeScale; S.hitstop(70); flash[li] = -0.6; streak = 0;
         fx.burst(n.x, n.y, P.orange, 30, 260, 0.8, 4); fx.burst(n.x, n.y, P.ink, 16, 200, 0.7, 3);
-        fl.add(n.x, n.y - 10, 'Bumm!', P.ink); snd.noise(0.6, 0.5, 200);
+        fl.add(n.x, n.y - 10, T.boom, P.ink); snd.noise(0.6, 0.5, 200);
         if (strikes >= DF().lives) gameOver();
         return true;
       }
@@ -114,11 +121,11 @@
         fx.burst(n.x, n.y + 20, p.kind === 'gold' ? P.yellow : colors()[col], 12, 150, 0.6, 4);
         fl.add(n.x, n.y - 10, `+${pts}`, P.ink);
         snd.tone(440 * Math.pow(1.06, Math.min(streak, 24)), 0.1, 'triangle', 0.22);
-        if (streak > 0 && streak % 5 === 0 && mult() > 1) { banner = { text: `Kombo ×${mult()}`, t: 0 }; snd.chord([523, 659, 784], 0.25, 'triangle', 0.15); }
+        if (streak > 0 && streak % 5 === 0 && mult() > 1) { banner = { text: T.combo(mult()), t: 0 }; snd.chord([523, 659, 784], 0.25, 'triangle', 0.15); }
         if (sorted >= shuffleAt) { shuffleWarn = 2.2; shuffleAt += 15; }
         if (stage === 1 && score >= 30) upgradeStage();
       } else {
-        strikes++; shake = 0.35; flash[li] = -0.6; streak = 0;
+        strikes++; shake = 0.35 * S.shakeScale; S.hitstop(45); flash[li] = -0.6; streak = 0;
         fl.add(n.x, n.y - 10, '✕', P.ink); snd.tone(150, 0.25, 'sawtooth', 0.18, 0.7);
         if (strikes >= DF().lives) gameOver();
       }
@@ -131,7 +138,7 @@
 
   function upgradeStage() {
     stage = 2;
-    banner = { text: 'Ausbau: acht Rutschen', t: 0 };
+    banner = { text: T.expand, t: 0 };
     snd.chord([392, 523, 659, 784], 0.5, 'triangle', 0.2);
     for (const p of parcels) { const [x, y] = pointAt(segs[p.seg], p.d); fx.burst(x, y, P.soft, 6, 80, 0.4, 2); }
     parcels = []; spawnT = 2.2;
@@ -144,8 +151,8 @@
     state = 'over';
     const rec = hud.best(score);
     snd.tone(200, 0.6, 'sine', 0.2, 0.5);
-    setTimeout(() => ov.show(rec && score > 0 ? 'Neuer Rekord!' : 'Schicht vorbei',
-      `<b>${score}</b> Punkte, <b>${sorted}</b> Pakete sortiert${stage > 1 ? ', Ausbaustufe 2 erreicht' : ''}. Rekord: <b>${hud.bestValue}</b>.`, 'Nächste Schicht', startGame), 600);
+    setTimeout(() => ov.show(rec && score > 0 ? T.record : T.lost,
+      T.over(score, sorted, stage > 1, hud.bestValue), T.retry, startGame), 600);
     setTimeout(() => diff.mount(ov), 610);
   }
 
@@ -159,7 +166,7 @@
       const [px, py] = pointAt(segs[p.seg], p.d);
       if (Math.hypot(px - x, py - y) < 26) {
         parcels.splice(i, 1); score += 2; hud.score(score);
-        fx.burst(px, py, P.blue, 14, 140, 0.5, 3); fl.add(px, py - 14, 'entschärft +2', P.ink);
+        fx.burst(px, py, P.blue, 14, 140, 0.5, 3); fl.add(px, py - 14, T.defused, P.ink);
         snd.chord([660, 990], 0.15, 'sine', 0.2); return;
       }
     }
@@ -297,7 +304,7 @@
       ctx.save(); ctx.translate(n.x, n.y); ctx.scale(dir, 1);
       ctx.fillStyle = P.ink; ctx.beginPath(); ctx.moveTo(-r * 0.5, -r * 0.18); ctx.lineTo(r * 0.15, -r * 0.18); ctx.lineTo(r * 0.15, -r * 0.45); ctx.lineTo(r * 0.6, 0); ctx.lineTo(r * 0.15, r * 0.45); ctx.lineTo(r * 0.15, r * 0.18); ctx.lineTo(-r * 0.5, r * 0.18); ctx.closePath(); ctx.fill();
       ctx.restore();
-      ctx.fillStyle = P.soft; ctx.font = '600 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'center';
+      ctx.fillStyle = P.soft; ctx.font = '600 11px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'center';
       ctx.fillText(String(i + 1), n.x, n.y - r - 7);
     }
 
@@ -309,22 +316,22 @@
     ctx.restore();
     S.tex.grain(ctx, w, h, P.ink, P.dark ? 0.5 : 1);
 
-    ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'left'; ctx.fillStyle = P.ink;
-    ctx.fillText('FEHLER', 16, 26);
+    ctx.font = '600 12px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'left'; ctx.fillStyle = P.ink;
+    ctx.fillText(T.strikes, 16, 26);
     for (let i = 0; i < DF().lives; i++) {
       ctx.strokeStyle = P.ink; ctx.lineWidth = 2; ctx.strokeRect(74 + i * 20, 16, 14, 14);
       if (i < strikes) { ctx.beginPath(); ctx.moveTo(77 + i * 20, 19); ctx.lineTo(85 + i * 20, 27); ctx.moveTo(85 + i * 20, 19); ctx.lineTo(77 + i * 20, 27); ctx.stroke(); }
     }
-    if (mult() > 1) { ctx.fillStyle = P.pink; ctx.fillText(`Kombo ×${mult()}`, 16, 48); }
-    ctx.textAlign = 'right'; ctx.fillStyle = P.soft; ctx.fillText(`Stufe ${stage}`, w - 16, 26); ctx.textAlign = 'left';
+    if (mult() > 1) { ctx.fillStyle = P.pink; ctx.fillText(T.combo(mult()), 16, 48); }
+    ctx.textAlign = 'right'; ctx.fillStyle = P.soft; ctx.fillText(T.stage(stage), w - 16, 26); ctx.textAlign = 'left';
     if (shuffleWarn > 0) {
-      ctx.textAlign = 'center'; ctx.font = '400 22px "Young Serif", Georgia, serif'; ctx.fillStyle = P.ink;
-      ctx.fillText('Achtung, die Rutschen tauschen!', w / 2, h - 18);
+      ctx.textAlign = 'center'; ctx.font = '700 22px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif'; ctx.fillStyle = P.ink;
+      ctx.fillText(T.swap, w / 2, h - 18);
     }
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 1.8 ? 1 - (banner.t - 1.8) / 0.4 : 1;
       ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, h * 0.09 + 30); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
-      ctx.font = '400 28px "Young Serif", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
+      ctx.font = '700 28px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
       ctx.restore();
     }
     ctx.textAlign = 'left';
@@ -332,9 +339,7 @@
 
   S.dbg.next = () => { if (state !== 'play') return; if (stage === 1) upgradeStage(); else { score += 10; hud.score(score); } };
   setDepth(2);
-  ov.show('Weichenwerk',
-    'Pakete laufen über das Band nach unten. <b>Stell die Weichen</b> so, dass jedes Paket in der Rutsche mit derselben Farbe und Form landet. Sind alle Fehlerkästchen voll, ist Schicht.<ul><li>Goldpakete passen überall, Expresspakete sind schnell</li><li>Halbe-halbe-Pakete dürfen in eine der beiden Farben</li><li><b>Bomben antippen</b>, bevor sie unten ankommen</li><li>Ab 30 Punkten baut das Werk auf acht Rutschen aus</li></ul>',
-    'Band starten', startGame);
+  ov.show(T.title, T.intro, T.play, startGame);
   diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });

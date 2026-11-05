@@ -1,4 +1,4 @@
-/* Mosaik: Logikrätsel. Jede Zahl sagt, wie viele Steine im 3×3-Feld um sie herum glasiert sind. */
+/* Mosaic: logic puzzle. Each number counts the glazed tiles in the 3×3 block around it. */
 (() => {
   const S = Shell, E = S.ease, snd = S.sound;
   const cv = document.getElementById('c');
@@ -7,11 +7,18 @@
   const st = S.stage(cv, () => layout());
   const ctx = st.ctx;
   const hud = S.hud('mosaik');
+  const T = {
+    title: 'Mosaic', play: 'Lay tiles', done: 'Finished',
+    intro: 'Each number counts the glazed tiles in the 3×3 block around it, itself included. Every puzzle has one solution and needs no guessing.',
+    solved: (a, b, c) => `<br>Solved: Easy ${a} · Normal ${b} · Hard ${c}`,
+    fill: 'Mode: glaze', mark: 'Mode: empty', hint: 'Hint', check: 'Check', fresh: 'New puzzle',
+    hints: (n) => ` · ${n} hint${n > 1 ? 's' : ''}`,
+  };
   const ov = S.overlay();
   const fx = S.particles();
   const fl = S.floaters();
   const diff = S.difficulty('mosaik');
-  const CFG = { leicht: { n: 6, rules: 1, keep: 0.3, pts: 50 }, normal: { n: 8, rules: 2, keep: 0.08, pts: 100 }, schwer: { n: 10, rules: 2, keep: 0, pts: 200 } };
+  const CFG = { easy: { n: 6, rules: 1, keep: 0.3, pts: 50 }, normal: { n: 8, rules: 2, keep: 0.08, pts: 100 }, hard: { n: 10, rules: 2, keep: 0, pts: 200 } };
 
   let n = 6, sol = [], shown = [], cells = [], clue = [], solved = false, hints = 0, time = 0, solvedT = 0, seed = 1;
   let score = S.store.get('mosaik:score', 0), streakN = 0;
@@ -87,7 +94,7 @@
     cs = Math.floor(Math.min((st.w - 32) / n, (st.h - top - bottom) / n, 64));
     ox = Math.floor((st.w - cs * n) / 2);
     oy = Math.floor(top + (st.h - top - bottom - cs * n) / 2);
-    const labels = [['mode', markMode ? 'Modus: Leer' : 'Modus: Füllen'], ['hint', 'Tipp'], ['check', 'Prüfen'], ['new', 'Neues Rätsel']];
+    const labels = [['mode', markMode ? T.mark : T.fill], ['hint', T.hint], ['check', T.check], ['new', T.fresh]];
     const bw = Math.min(124, (st.w - 24) / labels.length - 6), bh = 34, by = oy + cs * n + 22;
     const total = labels.length * bw + (labels.length - 1) * 6;
     buttons = labels.map(([id, label], i) => ({ id, label, x: st.w / 2 - total / 2 + i * (bw + 6), y: by, w: bw, h: bh }));
@@ -109,10 +116,10 @@
     for (let i = 0; i < n * n; i++) if ((cells[i] === 1) !== (sol[i] === 1)) return;
     solved = true; solvedT = 0;
     const cfg = CFG[diff.value];
-    const bonus = Math.max(0, Math.round(cfg.pts * 0.6 - time * (diff.value === 'schwer' ? 0.5 : 1)));
+    const bonus = Math.max(0, Math.round(cfg.pts * 0.6 - time * (diff.value === 'hard' ? 0.5 : 1)));
     const pts = Math.max(10, cfg.pts + bonus - hints * 15);
     score += pts; hud.score(score); hud.best(score); S.store.set('mosaik:score', score);
-    const done = S.store.get('mosaik:done:' + diff.value, 0) + 1; S.store.set('mosaik:done:' + diff.value, done);
+    const done = S.store.get('mosaik:done:' + diff.value, S.store.get('mosaik:done:' + ({ easy: 'leicht', hard: 'schwer' }[diff.value] || diff.value), 0)) + 1; S.store.set('mosaik:done:' + diff.value, done);
     fl.add(st.w / 2, oy - 8, `+${pts}`, P.ink);
     snd.chord([523, 659, 784, 1046, 1318], 0.6, 'triangle', 0.18, 0.08);
     for (let i = 0; i < n * n; i++) for (let i2 = 0; i2 < (sol[i] ? 1 : 0); i2++) cells[i] = 1;
@@ -209,7 +216,7 @@
         const { f, u } = counts(i);
         const done = u === 0 && f === clue[i];
         const err = f > clue[i] || f + u < clue[i];
-        ctx.font = `400 ${Math.floor(cs * 0.44)}px "Young Serif", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `400 ${Math.floor(cs * 0.44)}px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillStyle = err ? P.orange : v === 1 ? P.paper : done ? P.soft : P.ink;
         ctx.globalAlpha = done && !err ? 0.55 : 1;
         ctx.fillText(String(clue[i]), cx, cy + 1);
@@ -219,15 +226,15 @@
     ctx.textBaseline = 'alphabetic';
 
     // Kopfzeile
-    ctx.fillStyle = P.ink; ctx.font = '600 13px "IBM Plex Mono", monospace'; ctx.textAlign = 'left';
+    ctx.fillStyle = P.ink; ctx.font = '600 13px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'left';
     ctx.fillText(`${diff.label} · ${n}×${n}`, ox - 4, oy - 16);
     ctx.textAlign = 'right';
     const mm = Math.floor(time / 60), ss = Math.floor(time % 60);
-    ctx.fillText(`${mm}:${String(ss).padStart(2, '0')}${hints ? ` · ${hints} Tipp${hints > 1 ? 's' : ''}` : ''}`, ox + cs * n + 4, oy - 16);
+    ctx.fillText(`${mm}:${String(ss).padStart(2, '0')}${hints ? T.hints(hints) : ''}`, ox + cs * n + 4, oy - 16);
     ctx.textAlign = 'left';
 
     // Knöpfe
-    ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = '600 12px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     for (const b of buttons) {
       const pr = b.press ? 2 : 0;
       ctx.fillStyle = P.ink; S.tex.wobblyRect(ctx, b.x + 3, b.y + 3, b.w, b.h, 1, b.x); ctx.fill();
@@ -242,9 +249,9 @@
     if (solved && solvedT > 0.6) {
       const k = E.outBack(S.clamp((solvedT - 0.6) / 0.4, 0, 1));
       ctx.save(); ctx.translate(st.w / 2, oy + (cs * n) / 2); ctx.scale(k, k);
-      ctx.font = '400 38px "Young Serif", Georgia, serif'; ctx.textAlign = 'center';
-      ctx.lineWidth = 6; ctx.strokeStyle = P.paper; ctx.strokeText('Fertig gelegt', 0, 0);
-      ctx.fillStyle = P.ink; ctx.fillText('Fertig gelegt', 0, 0);
+      ctx.font = '700 38px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif'; ctx.textAlign = 'center';
+      ctx.lineWidth = 6; ctx.strokeStyle = P.paper; ctx.strokeText(T.done, 0, 0);
+      ctx.fillStyle = P.ink; ctx.fillText(T.done, 0, 0);
       ctx.restore(); ctx.textAlign = 'left';
     }
     fx.draw(ctx); fl.draw(ctx);
@@ -253,10 +260,8 @@
 
   function menu() {
     state = 'menu';
-    const done = ['leicht', 'normal', 'schwer'].map((d) => S.store.get('mosaik:done:' + d, 0));
-    ov.show('Mosaik',
-      'Lege das Mosaik frei. Jede Zahl sagt, wie viele Steine im <b>3×3-Feld um sie herum</b> glasiert sind, sie selbst mitgezählt. Jedes Rätsel hat genau eine Lösung und lässt sich ohne Raten lösen.<ul><li>Tippen: glasieren, nochmal: leer, nochmal: offen</li><li>Ziehen füllt mehrere Steine, Rechtsklick oder Modus „Leer“ markiert leere</li><li><kbd>H</kbd> Tipp · <kbd>M</kbd> Modus wechseln</li></ul>' + `Gelöst: Leicht ${done[0]} · Normal ${done[1]} · Schwer ${done[2]}`,
-      'Rätsel legen', newPuzzle);
+    const done = ['easy', 'normal', 'hard'].map((d) => S.store.get('mosaik:done:' + d, S.store.get('mosaik:done:' + ({ easy: 'leicht', hard: 'schwer' }[d] || d), 0)));
+    ov.show(T.title, T.intro + T.solved(done[0], done[1], done[2]), T.play, newPuzzle);
     diff.mount(ov);
   }
 
