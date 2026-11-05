@@ -19,6 +19,8 @@
     { name: 'Schlund', types: ['normal', 'pulsar', 'ice', 'giant'], comets: 0.55, holes: 0.25 },
   ];
   const ZONE_LEN = 18;
+  const diff = S.difficulty('umlauf');
+  const D = () => diff.pick({ leicht: { span: 1.45, cap: 1.15, comet: 0.5 }, normal: { span: 1, cap: 1, comet: 1 }, schwer: { span: 0.72, cap: 0.88, comet: 1.5 } });
 
   let planets = [], sparks = [], comets = [], holes = [], powers = [];
   let ship = null, camY = 0, score = 0, planetsDone = 0, combo = 1, state = 'menu', nextY = 0, shake = 0, t = 0, flyTime = 0;
@@ -35,7 +37,7 @@
     let r = S.rand(15, 27) * small;
     if (type === 'giant') r *= 1.45;
     if (type === 'ice') r *= 0.85;
-    const R = type === 'giant' ? r * 2.1 + 40 : r * 2.3 + 26;
+    const R = (type === 'giant' ? r * 2.1 + 40 : r * 2.3 + 26) * D().cap;
     const margin = R * 0.6 + 8;
     const prev = planets[planets.length - 1];
     let x = S.rand(margin, w - margin);
@@ -64,6 +66,7 @@
   function reset() {
     planets = []; sparks = []; comets = []; holes = []; powers = []; fx.clear(); fl.clear();
     score = 0; planetsDone = 0; combo = 1; hud.score(0); shake = 0; flyTime = 0; spawned = 0; zoneIdx = 0;
+    if (S.debug.on && S.debug.start > 1) { spawned = (Math.min(S.debug.start, ZONES.length) - 1) * ZONE_LEN; zoneIdx = Math.min(S.debug.start, ZONES.length) - 1; }
     shield = false; magnet = 0; banner = null;
     nextY = H() * 0.68;
     addPlanet();
@@ -107,8 +110,8 @@
   }
 
   function die(reason) {
-    if (shield) {
-      shield = false; shake = 0.25;
+    if (shield || (S.debug.on && S.debug.god)) {
+      if (!(S.debug.on && S.debug.god)) shield = false; shake = 0.25;
       fx.burst(ship.x, ship.y, P.blue, 22, 200, 0.7, 3);
       snd.tone(520, 0.3, 'sine', 0.25, 0.5);
       // zurück zum letzten Planeten
@@ -127,8 +130,9 @@
     const rec = hud.best(score);
     setTimeout(() => ov.show(
       rec && score > 0 ? 'Neuer Rekord!' : 'Abgedriftet',
-      `<b>${score}</b> Punkte, <b>${planetsDone}</b> Planeten, bis <b>Zone ${zoneIdx + 1}</b>. Rekord: <b>${hud.bestValue}</b>.`,
+      `<b>${score}</b> Punkte, <b>${planetsDone}</b> Planeten, bis <b>Zone ${zoneIdx + 1}</b> (${diff.label}). Rekord: <b>${hud.bestValue}</b>.`,
       'Nochmal', start), 650);
+    setTimeout(() => diff.mount(ov), 660);
   }
 
   function start() { reset(); state = 'play'; banner = { text: 'Zone 1: Heimatbahn', t: 0 }; }
@@ -142,7 +146,7 @@
     }
     // Kometen
     const z = zoneFor(planetsDone);
-    if (state === 'play' && z.comets && Math.random() < z.comets * dt * 0.5) {
+    if (state === 'play' && z.comets && Math.random() < z.comets * D().comet * dt * 0.5) {
       const fromLeft = Math.random() < 0.5;
       comets.push({ x: fromLeft ? -30 : w + 30, y: camY + S.rand(h * 0.05, h * 0.6), vx: (fromLeft ? 1 : -1) * S.rand(110, 180), vy: S.rand(20, 60), trail: [] });
       snd.noise(0.4, 0.05, 400);
@@ -158,7 +162,7 @@
         ship.x = p.x + Math.cos(ship.a) * ship.rad;
         ship.y = p.y + Math.sin(ship.a) * ship.rad;
         if (state === 'play' && planetsDone > 0) {
-          const span = Math.max(2.1, 4.6 - planetsDone * 0.05) * (p.type === 'giant' ? 1.5 : p.type === 'ice' ? 0.8 : 1);
+          const span = D().span * Math.max(2.1, 4.6 - planetsDone * 0.05) * (p.type === 'giant' ? 1.5 : p.type === 'ice' ? 0.8 : 1);
           p.life -= dt / span;
           if (p.life <= 0 && p.crumble === 0) {
             p.crumble = 0.001;
@@ -227,7 +231,7 @@
 
   function draw() {
     const w = W(), h = H();
-    ctx.fillStyle = P.paper; ctx.fillRect(0, 0, w, h);
+    S.tex.paperBg(ctx, w, h, P);
     // Zonenfarbe als zarter Schleier
     const zc = [null, P.green, P.yellow, P.pink, P.ink][zoneIdx];
     if (zc) { ctx.globalAlpha = 0.06; ctx.fillStyle = zc; ctx.fillRect(0, 0, w, h); ctx.globalAlpha = 1; }
@@ -266,7 +270,7 @@
       }
       const col = p.type === 'giant' ? P.yellow : p.type === 'ice' ? P.green : p.type === 'pulsar' ? P.ink : P.blue;
       ctx.globalAlpha = k;
-      S.riso(ctx, circle(p.x, p.y, p.r * k), P.pink, col, 3, 2.5);
+      S.riso(ctx, circle(p.x, p.y, p.r * k), P.pink, col, 3, 2.5, p);
       ctx.globalAlpha = 0.55 * k;
       S.tex.halftoneCircle(ctx, p.x, p.y, p.r * k, P.ink, -2.3, Math.max(3.2, p.r / 6));
       ctx.globalAlpha = k;
@@ -347,6 +351,7 @@
       }
     }
 
+    if (ship) { S.dbg.circle(ctx, ship.x, ship.y, 6); for (const p of planets) S.dbg.circle(ctx, p.x, p.y, p.R, '#ff0'); for (const c of comets) S.dbg.circle(ctx, c.x, c.y, 14, '#f0f'); }
     fx.draw(ctx); fl.draw(ctx);
     ctx.restore();
     S.tex.grain(ctx, w, h, P.ink, P.dark ? 0.5 : 1, 0, camY * 0.4);
@@ -361,7 +366,7 @@
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 2.2 ? 1 - (banner.t - 2.2) / 0.4 : 1;
       ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, h * 0.2); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
-      ctx.font = '600 italic 28px "Fraunces", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink;
+      ctx.font = '400 28px "Young Serif", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink;
       ctx.fillText(banner.text, 0, 0);
       ctx.restore(); ctx.textAlign = 'left';
     }
@@ -371,10 +376,12 @@
   ptr.onDown = () => release();
   S.keys((k) => { if ((k === ' ' || k === 'ArrowUp' || k === 'w') && !ov.open) release(); });
 
+  S.dbg.next = () => { spawned = Math.max(spawned, (zoneIdx + 1) * ZONE_LEN); };
   reset();
   ov.show('Umlauf',
     'Dein Schiff kreist um einen Planeten. <b>Tippe</b>, um dich zu lösen, und lass dich vom nächsten Schwerefeld einfangen. Planeten zerfallen, wenn du zu lange bleibst.<ul><li>Knapp an der Umlaufbahn einfangen gibt <b>Kombos</b></li><li>Eisplaneten drehen schnell, Riesen langsam</li><li>Pulsare fangen nur, wenn ihr Feld leuchtet</li><li>Weiter oben: Kometen, schwarze Löcher, Schild und Magnet</li></ul>',
     'Starten', start);
+  diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });
 })();
