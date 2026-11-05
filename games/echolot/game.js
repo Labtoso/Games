@@ -17,7 +17,9 @@
 
   let cols, rows, grid, rock, lit, start, exit, sub, mines, items, pings, beaconT, level, score, hull, charge, pearls, state = 'menu', t = 0, shake = 0, camX = 0, camY = 0, levelTime = 0, echoDir = null;
   let up;
-  const baseUp = () => ({ maxCharge: 3, maxHull: 3, quiet: 0, engine: 0, range: 0 });
+  const diff = S.difficulty('echolot');
+  const D = () => diff.pick({ leicht: { hull: 4, mines: 0.6, msp: 0.8, rech: 1.3 }, normal: { hull: 3, mines: 1, msp: 1, rech: 1.7 }, schwer: { hull: 2, mines: 1.4, msp: 1.25, rech: 2.1 } });
+  const baseUp = () => ({ maxCharge: 3, maxHull: D().hull, quiet: 0, engine: 0, range: 0 });
 
   const ringMax = () => 520 + up.range * 110;
   const wakeRange = () => 600 * (1 - up.quiet * 0.25);
@@ -78,7 +80,7 @@
       const far2 = (list, x, y, d) => list.every((o) => Math.hypot(o.x - x, o.y - y) > d);
 
       mines = [];
-      const want = 3 + level * 2;
+      const want = Math.round((3 + level * 2) * D().mines);
       for (const k of openCells) {
         if (mines.length >= want) break;
         if (dist[k] < 12 || dist[k] > dist[far] - 3) continue;
@@ -115,7 +117,7 @@
     charge = up.maxCharge;
   }
 
-  function startGame() { level = 1; score = 0; pearls = 0; up = baseUp(); hull = up.maxHull; hud.score(0); fx.clear(); newLevel(); state = 'play'; }
+  function startGame() { level = S.debug.on ? Math.max(1, S.debug.start) : 1; score = 0; pearls = 0; up = baseUp(); hull = up.maxHull; hud.score(0); fx.clear(); newLevel(); state = 'play'; }
 
   function ping() {
     if (state !== 'play' || charge < 1) return;
@@ -161,6 +163,7 @@
   }
 
   function damage() {
+    if ((S.debug.on && S.debug.god)) { shake = 0.2; return; }
     hull -= 1; shake = 0.35; sub.hitCd = 1;
     fx.burst(sub.x, sub.y, C.mine, 16, 180, 0.7, 3);
     snd.noise(0.35, 0.4, 260); snd.tone(110, 0.3, 'square', 0.15, 0.6);
@@ -169,6 +172,7 @@
       const rec = hud.best(score);
       setTimeout(() => ov.show(rec && score > 0 ? 'Neuer Rekord!' : 'Rumpf geborsten',
         `Du bist bis <b>Tiefe ${level}</b> gekommen und hast <b>${score}</b> Punkte. Rekord: <b>${hud.bestValue}</b>.`, 'Nochmal tauchen', startGame), 700);
+      setTimeout(() => diff.mount(ov), 710);
     }
   }
 
@@ -212,7 +216,7 @@
     t += dt;
     if (state === 'play') {
       levelTime += dt;
-      charge = Math.min(up.maxCharge, charge + dt / 1.7);
+      charge = Math.min(up.maxCharge, charge + dt / D().rech);
       let ax = 0, ay = 0;
       if (keys.has('ArrowLeft') || keys.has('a') || keys.has('A')) ax -= 1;
       if (keys.has('ArrowRight') || keys.has('d') || keys.has('D')) ax += 1;
@@ -239,7 +243,7 @@
         if (t >= m.wake) { m.hunt = 1; m.wake = Infinity; }
         if (m.hunt) {
           const dx = m.tx - m.x, dy = m.ty - m.y, d = Math.hypot(dx, dy);
-          const sp = 48 + level * 7;
+          const sp = (48 + level * 7) * D().msp;
           if (d > 4) { const o = { x: m.x + (dx / d) * sp * dt, y: m.y + (dy / d) * sp * dt, vx: 0, vy: 0 }; collideCircle(o, 8, 0); m.x = o.x; m.y = o.y; }
           else m.hunt = 0;
         } else if (m.patrol) {
@@ -396,6 +400,7 @@
         ctx.globalAlpha = 1;
       }
     }
+    if (sub) { S.dbg.circle(ctx, sub.x, sub.y, 7); for (const m of mines) S.dbg.circle(ctx, m.x, m.y, 8, '#f0f'); }
     fx.draw(ctx); fl.draw(ctx);
     ctx.restore();
 
@@ -424,12 +429,14 @@
     }
   }
 
+  S.dbg.next = () => { if (state === 'play') { sub.x = exit.x * CS + CS / 2; sub.y = exit.y * CS + CS / 2; } };
   level = 1; score = 0; pearls = 0; up = baseUp(); hull = up.maxHull;
   newLevel();
   setTimeout(() => { state = 'play'; ping(); state = 'menu'; }, 300);
   ov.show('Echolot',
     'Du steuerst ein U-Boot durch eine stockdunkle Höhle. <b>Ping</b> macht die Wände kurz sichtbar und zeigt Richtung Leuchtfeuer.<ul><li>Minen hören den Ping und kommen näher</li><li>Perlen sammeln und in der Werft gegen Upgrades tauschen</li><li>Grüne Kreuze reparieren den Rumpf</li><li>Harte Stöße an der Wand kosten Rumpf</li></ul>',
     'Abtauchen', startGame);
+  diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });
 })();
