@@ -18,6 +18,8 @@
   let flash = [];
 
   const colors = () => [P.pink, P.blue, P.yellow, P.green];
+  const diff = S.difficulty('weichenwerk');
+  const DF = () => diff.pick({ leicht: { sp: 0.8, lives: 5 }, normal: { sp: 1, lives: 3 }, schwer: { sp: 1.2, lives: 2 } });
   const mult = () => Math.min(4, 1 + Math.floor(streak / 5));
 
   function setDepth(d) {
@@ -62,13 +64,14 @@
     return pts[pts.length - 1];
   }
 
-  function speed() { return Math.min(85 + score * 1.6, 220) * Math.max(0.8, st.h / 700) * (D > 2 ? 0.85 : 1); }
+  function speed() { return DF().sp * Math.min(85 + score * 1.6, 220) * Math.max(0.8, st.h / 700) * (D > 2 ? 0.85 : 1); }
   function interval() { return Math.max(0.8, 2.3 - score * 0.025) * (D > 2 ? 1.15 : 1); }
 
   function startGame() {
     score = 0; strikes = 0; streak = 0; sorted = 0; shuffleAt = 15; parcels = []; stage = 1;
     setDepth(2);
     spawnT = 0.6; hud.score(0); fx.clear(); fl.clear(); state = 'play'; banner = { text: 'Schicht beginnt', t: 0 };
+    if (S.debug.on && S.debug.start > 1) upgradeStage();
   }
 
   function toggle(i) {
@@ -99,7 +102,7 @@
         strikes++; shake = 0.5; flash[li] = -0.6; streak = 0;
         fx.burst(n.x, n.y, P.orange, 30, 260, 0.8, 4); fx.burst(n.x, n.y, P.ink, 16, 200, 0.7, 3);
         fl.add(n.x, n.y - 10, 'Bumm!', P.ink); snd.noise(0.6, 0.5, 200);
-        if (strikes >= 3) gameOver();
+        if (strikes >= DF().lives) gameOver();
         return true;
       }
       const good = p.kind === 'gold' || col === p.c || (p.kind === 'mixed' && col === p.c2);
@@ -117,7 +120,7 @@
       } else {
         strikes++; shake = 0.35; flash[li] = -0.6; streak = 0;
         fl.add(n.x, n.y - 10, '✕', P.ink); snd.tone(150, 0.25, 'sawtooth', 0.18, 0.7);
-        if (strikes >= 3) gameOver();
+        if (strikes >= DF().lives) gameOver();
       }
       return true;
     }
@@ -137,11 +140,13 @@
   }
 
   function gameOver() {
+    if ((S.debug.on && S.debug.god)) { strikes = 0; return; }
     state = 'over';
     const rec = hud.best(score);
     snd.tone(200, 0.6, 'sine', 0.2, 0.5);
     setTimeout(() => ov.show(rec && score > 0 ? 'Neuer Rekord!' : 'Schicht vorbei',
       `<b>${score}</b> Punkte, <b>${sorted}</b> Pakete sortiert${stage > 1 ? ', Ausbaustufe 2 erreicht' : ''}. Rekord: <b>${hud.bestValue}</b>.`, 'Nächste Schicht', startGame), 600);
+    setTimeout(() => diff.mount(ov), 610);
   }
 
   const ptr = S.pointer(cv);
@@ -246,7 +251,7 @@
 
   function draw() {
     const w = st.w, h = st.h;
-    ctx.fillStyle = P.paper; ctx.fillRect(0, 0, w, h);
+    S.tex.paperBg(ctx, w, h, P);
     // Fabrikboden: Rasterfeld
     ctx.globalAlpha = 0.08; ctx.drawImage(S.tex.cached('floor' + P.ink, w, h, (c) => S.tex.halftoneRect(c, 0, 0, w, h, P.ink, (u, v) => 0.2 + v * 0.5, 9)), 0, 0); ctx.globalAlpha = 1;
     ctx.save();
@@ -299,35 +304,38 @@
     const s = Math.max(8, tw * 0.48);
     for (const p of parcels) { const [x, y] = pointAt(segs[p.seg], p.d); drawParcel(p, x, y, s); }
 
+    for (let i = 0; i < NS; i++) S.dbg.circle(ctx, swPos[i].x, swPos[i].y, Math.max(56, st.w * (D > 2 ? 0.06 : 0.09)));
     fx.draw(ctx); fl.draw(ctx);
     ctx.restore();
     S.tex.grain(ctx, w, h, P.ink, P.dark ? 0.5 : 1);
 
     ctx.font = '600 12px "IBM Plex Mono", monospace'; ctx.textAlign = 'left'; ctx.fillStyle = P.ink;
     ctx.fillText('FEHLER', 16, 26);
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < DF().lives; i++) {
       ctx.strokeStyle = P.ink; ctx.lineWidth = 2; ctx.strokeRect(74 + i * 20, 16, 14, 14);
       if (i < strikes) { ctx.beginPath(); ctx.moveTo(77 + i * 20, 19); ctx.lineTo(85 + i * 20, 27); ctx.moveTo(85 + i * 20, 19); ctx.lineTo(77 + i * 20, 27); ctx.stroke(); }
     }
     if (mult() > 1) { ctx.fillStyle = P.pink; ctx.fillText(`Kombo ×${mult()}`, 16, 48); }
     ctx.textAlign = 'right'; ctx.fillStyle = P.soft; ctx.fillText(`Stufe ${stage}`, w - 16, 26); ctx.textAlign = 'left';
     if (shuffleWarn > 0) {
-      ctx.textAlign = 'center'; ctx.font = '600 italic 22px "Fraunces", Georgia, serif'; ctx.fillStyle = P.ink;
+      ctx.textAlign = 'center'; ctx.font = '400 22px "Young Serif", Georgia, serif'; ctx.fillStyle = P.ink;
       ctx.fillText('Achtung, die Rutschen tauschen!', w / 2, h - 18);
     }
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 1.8 ? 1 - (banner.t - 1.8) / 0.4 : 1;
       ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, h * 0.09 + 30); ctx.scale(0.8 + 0.2 * k, 0.8 + 0.2 * k);
-      ctx.font = '600 italic 28px "Fraunces", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
+      ctx.font = '400 28px "Young Serif", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
       ctx.restore();
     }
     ctx.textAlign = 'left';
   }
 
+  S.dbg.next = () => { if (state !== 'play') return; if (stage === 1) upgradeStage(); else { score += 10; hud.score(score); } };
   setDepth(2);
   ov.show('Weichenwerk',
-    'Pakete laufen über das Band nach unten. <b>Stell die Weichen</b> so, dass jedes Paket in der Rutsche mit derselben Farbe und Form landet. Drei Fehler, dann ist Schicht.<ul><li>Goldpakete passen überall, Expresspakete sind schnell</li><li>Halbe-halbe-Pakete dürfen in eine der beiden Farben</li><li><b>Bomben antippen</b>, bevor sie unten ankommen</li><li>Ab 30 Punkten baut das Werk auf acht Rutschen aus</li></ul>',
+    'Pakete laufen über das Band nach unten. <b>Stell die Weichen</b> so, dass jedes Paket in der Rutsche mit derselben Farbe und Form landet. Sind alle Fehlerkästchen voll, ist Schicht.<ul><li>Goldpakete passen überall, Expresspakete sind schnell</li><li>Halbe-halbe-Pakete dürfen in eine der beiden Farben</li><li><b>Bomben antippen</b>, bevor sie unten ankommen</li><li>Ab 30 Punkten baut das Werk auf acht Rutschen aus</li></ul>',
     'Band starten', startGame);
+  diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });
 })();
