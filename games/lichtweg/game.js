@@ -459,10 +459,7 @@
 
   function draw() {
     const w = st.w, h = st.h;
-    ctx.fillStyle = P.paper; ctx.fillRect(0, 0, w, h);
-    // feine Punkte im Hintergrund
-    ctx.fillStyle = P.line;
-    for (let y = 14; y < h; y += 28) for (let x = 14; x < w; x += 28) ctx.fillRect(x, y, 1.5, 1.5);
+    S.tex.paperBg(ctx, w, h, P);
 
     const boardIn = phase === 'in' ? E.outCubic(S.clamp(phaseT / 0.35, 0, 1)) : phase === 'out' ? 1 - S.clamp((phaseT - 0.25) / 0.3, 0, 1) : phase === 'paused' ? 0 : 1;
     // Brett mit versetztem Schatten
@@ -563,7 +560,7 @@
       ctx.fillStyle = P.card; ctx.beginPath(); ctx.roundRect(-cw / 2, -chh / 2, cw, chh, 8); ctx.fill();
       ctx.strokeStyle = P.ink; ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = P.ink; ctx.textAlign = 'center';
-      ctx.font = '600 italic 26px "Fraunces", Georgia, serif'; ctx.fillText('Alles im Licht', 0, -26);
+      ctx.font = '400 26px "Young Serif", Georgia, serif'; ctx.fillText('Alles im Licht', 0, -26);
       for (let i = 0; i < 3; i++) {
         const sk = E.outElastic(S.clamp((phaseT - 0.35 - i * 0.18) / 0.6, 0, 1));
         const on = i < winInfo.stars;
@@ -584,6 +581,8 @@
     ctx.closePath();
   }
 
+  if (S.debug.on && S.debug.start > 1) level = S.debug.start;
+  S.dbg.next = () => { if (phase !== 'play') return; for (let i = 0; i < grid.length; i++) { const c = grid[i]; if (c && c.m && !c.lock && c.m !== c.sol) rotate(i, false); } };
   hud.score(score);
   beginLevel(false);
   phase = 'paused';
