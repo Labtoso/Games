@@ -146,7 +146,7 @@
         const segs = 6;
         for (let i = 1; i <= segs; i++) pts.push([S.lerp(s.x, tx, i / segs) + (i < segs ? S.rand(-12, 12) : 0), S.lerp(s.y + 16, ty, i / segs)]);
         bolts.push({ pts, life: 0.35 });
-        flash = 0.25;
+        flash = S.reduced ? 0 : 0.25;
         snd.noise(0.8, 0.35, 160); snd.noise(0.15, 0.3, 2400);
         if (f) {
           if (f.bloom) { f.bloom = false; f.m = 0.55; f.flowers = []; score = Math.max(0, score - 5); hud.score(score); fl.add(tx, ty - 10, T.boltLoss, P.ink); }
