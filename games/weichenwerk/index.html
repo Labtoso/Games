@@ -15,13 +15,14 @@
 <header class="bar">
   <a class="back" href="../../">← Spielhalle</a>
   <h1>Weichenwerk</h1>
+  <button class="mute" type="button" data-mute>Ton an</button>
   <div class="scores"><span>Punkte <b data-score>0</b></span><span>Rekord <b data-best>0</b></span></div>
 </header>
 <main class="stage">
   <canvas id="c" aria-label="Spielfeld Weichenwerk"></canvas>
   <div class="overlay" hidden><div class="card"><h2></h2><p></p><button class="btn" type="button"></button></div></div>
 </main>
-<footer class="hint"><span>Weichen antippen, damit jedes Paket in seine Rutsche fällt.</span><span class="keys"><kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> Weichen</span></footer>
+<footer class="hint"><span>Weichen antippen, Bomben antippen zum Entschärfen.</span><span class="keys"><kbd>1</kbd>–<kbd>7</kbd> Weichen</span></footer>
 <script src="../../shared/shell.js"></script>
 <script src="game.js"></script>
 </body>
