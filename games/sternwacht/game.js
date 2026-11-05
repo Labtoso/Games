@@ -536,8 +536,9 @@
       ctx.globalAlpha = 0.9; ctx.fillStyle = N.paper; ctx.fillRect(p.x - wbeam * 0.3, 0, wbeam * 0.6, p.y - 14); ctx.globalAlpha = 1;
     }
     if (buyFx > 0) { ctx.strokeStyle = N.yellow; ctx.lineWidth = 2; ctx.globalAlpha = buyFx; ctx.beginPath(); ctx.arc(p.x, p.y, 20 + E.outCubic(1 - buyFx) * 50, 0, Math.PI * 2); ctx.stroke(); ctx.globalAlpha = 1; }
-    if (p.inv > 0 && state === 'play' && Math.floor(t * 14) % 2) return;
-    drawShip(ctx, p);
+    if (p.inv > 0 && state === 'play' && !S.reduced && Math.floor(t * 14) % 2) return;
+    if (p.inv > 0 && S.reduced) ctx.globalAlpha = 0.55;
+    drawShip(ctx, p); ctx.globalAlpha = 1;
   }
 
   function drawPreview() {
