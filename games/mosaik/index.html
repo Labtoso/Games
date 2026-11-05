@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mosaik · games.labtoso.de</title>
+<meta name="theme-color" content="#f2ecdf">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/style.css">
+</head>
+<body class="game-page" data-game="mosaik">
+<header class="bar">
+  <a class="back" href="../../">← Spielhalle</a>
+  <h1>Mosaik</h1>
+  <button class="mute" type="button" data-mute>Ton an</button>
+  <div class="scores"><span>Punkte <b data-score>0</b></span><span>Rekord <b data-best>0</b></span></div>
+</header>
+<main class="stage">
+  <canvas id="c" aria-label="Spielfeld Mosaik"></canvas>
+  <div class="overlay" hidden><div class="card"><h2></h2><p></p><button class="btn" type="button"></button></div></div>
+</main>
+<footer class="hint"><span>Tippen glasiert, nochmal tippen markiert leer. Ziehen füllt mehrere.</span><span class="keys"><kbd>H</kbd> Tipp · <kbd>M</kbd> Modus · Rechtsklick leer</span></footer>
+<script src="../../shared/shell.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
