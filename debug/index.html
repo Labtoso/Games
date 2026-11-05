@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Debug · games.labtoso.de</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../shared/style.css">
+</head>
+<body>
+<main class="debug">
+  <p><a href="../">← Spielhalle</a></p>
+  <h1>Debug-Modus</h1>
+  <p>Hier kann jede und jeder die Spiele ausprobieren, ohne zu verlieren. Die Einstellungen gelten nur in diesem Browser und bleiben, bis du den Modus ausschaltest.</p>
+  <p class="status" id="status"></p>
+
+  <form id="f">
+    <fieldset>
+      <legend>Allgemein</legend>
+      <label><input type="checkbox" name="on"> Debug-Modus eingeschaltet</label>
+      <label><input type="checkbox" name="god"> Unverwundbar (kein Leben verlieren, keine Fehler, keine Zeit ablaufen)</label>
+      <label><input type="checkbox" name="fps"> Bilder pro Sekunde anzeigen</label>
+      <label><input type="checkbox" name="hitbox"> Trefferzonen anzeigen</label>
+      <label><input type="checkbox" name="textures"> Texturen zeichnen (aus: flache Flächen zum Vergleich)</label>
+      <label>Spieltempo <input type="range" name="speed" min="0.25" max="2" step="0.25"> <output id="speedOut"></output></label>
+      <label>Start bei Level, Welle, Zone oder Tag <input type="number" name="start" min="1" max="40"></label>
+    </fieldset>
+    <fieldset>
+      <legend>Im Spiel</legend>
+      <p style="margin:0">Unten rechts steht ein kleines Debug-Feld mit den Bildern pro Sekunde. Mit <kbd>N</kbd> springst du weiter: nächste Zone, nächstes Level, Rätsel lösen, Welle beenden oder einen Punkt für links.</p>
+    </fieldset>
+  </form>
+
+  <fieldset>
+    <legend>Spiele im Debug-Modus öffnen</legend>
+    <div class="links">
+      <a href="../games/umlauf/?debug=1">Umlauf</a>
+      <a href="../games/echolot/?debug=1">Echolot</a>
+      <a href="../games/lichtweg/?debug=1">Lichtweg</a>
+      <a href="../games/wolkenhirte/?debug=1">Wolkenhirte</a>
+      <a href="../games/weichenwerk/?debug=1">Weichenwerk</a>
+      <a href="../games/sternwacht/?debug=1">Sternwacht</a>
+      <a href="../games/schlagabtausch/?debug=1">Schlagabtausch</a>
+      <a href="../games/mosaik/?debug=1">Mosaik</a>
+    </div>
+  </fieldset>
+  <p><button class="btn" id="reset" type="button">Debug ausschalten und zurücksetzen</button></p>
+</main>
+<script>
+  (function () {
+    var KEY = 'labtoso-games:debug';
+    var base = { on: true, god: false, fps: true, hitbox: false, speed: 1, textures: true, start: 1 };
+    function load() { try { return Object.assign({}, base, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) { return Object.assign({}, base); } }
+    function save(d) { try { localStorage.setItem(KEY, JSON.stringify(d)); } catch (e) {} }
+    var f = document.getElementById('f'), d = load();
+    if (!localStorage.getItem(KEY)) save(d);
+    function paint() {
+      for (var k in d) { var el = f.elements[k]; if (!el) continue; if (el.type === 'checkbox') el.checked = !!d[k]; else el.value = d[k]; }
+      document.getElementById('speedOut').textContent = d.speed + '×';
+      document.getElementById('status').textContent = d.on ? 'Debug ist an. Öffne ein Spiel unten.' : 'Debug ist aus.';
+    }
+    f.addEventListener('input', function () {
+      d.on = f.elements.on.checked; d.god = f.elements.god.checked; d.fps = f.elements.fps.checked; d.hitbox = f.elements.hitbox.checked;
+      d.textures = f.elements.textures.checked; d.speed = parseFloat(f.elements.speed.value) || 1; d.start = Math.max(1, parseInt(f.elements.start.value, 10) || 1);
+      save(d); paint();
+    });
+    document.getElementById('reset').addEventListener('click', function () { try { localStorage.removeItem(KEY); } catch (e) {} d = Object.assign({}, base, { on: false }); save(d); paint(); });
+    paint();
+  })();
+</script>
+</body>
+</html>
