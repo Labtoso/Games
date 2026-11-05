@@ -1,33 +1,22 @@
-/* games.labtoso.de · v2 · Regeln siehe STYLEGUIDE.md */
+/* games.labtoso.de · rules in STYLEGUIDE.md */
 :root {
-  --paper: #f1eadb;
-  --paper-2: #e5dcc8;
-  --ink: #221f2b;
-  --ink-soft: #5f5967;
-  --line: rgba(34, 31, 43, 0.18);
-  --pink: #f2457f;
-  --blue: #2a5fc4;
-  --yellow: #f6bf31;
-  --green: #139a63;
-  --orange: #f2702f;
-  --card: #f8f3e8;
-  --grain-opacity: 0.4;
+  /* Black paper: warm near-black stock, cream ink, bright print colours */
+  --paper: #131116;
+  --paper-2: #1d1a22;
+  --ink: #efe7d7;
+  --ink-soft: #a8a1ae;
+  --line: rgba(239, 231, 215, 0.16);
+  --pink: #ff5e95;
+  --blue: #6f96ff;
+  --yellow: #ffd056;
+  --green: #3dcc8c;
+  --orange: #ff8d58;
+  --card: #1b1820;
+  --grain-opacity: 0.28;
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
   --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  color-scheme: light;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #1a1820; --paper-2: #242029; --ink: #eee6d6; --ink-soft: #a39cab; --line: rgba(238, 230, 214, 0.16);
-    --pink: #ff6a9c; --blue: #6f96ff; --yellow: #ffd056; --green: #3dcc8c; --orange: #ff8d58; --card: #211e27;
-    --grain-opacity: 0.22; color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #1a1820; --paper-2: #242029; --ink: #eee6d6; --ink-soft: #a39cab; --line: rgba(238, 230, 214, 0.16);
-  --pink: #ff6a9c; --blue: #6f96ff; --yellow: #ffd056; --green: #3dcc8c; --orange: #ff8d58; --card: #211e27;
-  --grain-opacity: 0.22; color-scheme: dark;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -42,11 +31,9 @@ body {
 }
 body::before {
   content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 50;
-  opacity: var(--grain-opacity); mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.13 0 0 0 0 0.12 0 0 0 0 0.17 0 0 0 .6 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--grain-opacity); mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.94 0 0 0 0 0.9 0 0 0 0 0.84 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) body::before { mix-blend-mode: screen; } }
-:root[data-theme="dark"] body::before { mix-blend-mode: screen; }
 a { color: inherit; }
 kbd {
   font-family: var(--mono); font-size: 0.78em; color: var(--ink);

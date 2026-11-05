@@ -8,12 +8,12 @@
       paper: S.css('--paper'), paper2: S.css('--paper-2'), ink: S.css('--ink'), soft: S.css('--ink-soft'),
       line: S.css('--line'), pink: S.css('--pink'), blue: S.css('--blue'), yellow: S.css('--yellow'),
       green: S.css('--green'), orange: S.css('--orange'), card: S.css('--card'),
-      dark: matchMedia('(prefers-color-scheme: dark)').matches,
+      dark: true, // the whole arcade is printed on black paper
     };
     S.wearColor = p.paper;
     return p;
   };
-  S.wearColor = '#f2ecdf';
+  S.wearColor = '#131116';
   S.reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   /* Art foundation: one palette family, one light direction, three line weights */

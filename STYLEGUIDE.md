@@ -1,13 +1,18 @@
 # Style guide
 
-The arcade looks like print on paper: a few strong inks, slight misregistration, halftone and
+The arcade looks like print on black paper: a few strong inks, slight misregistration, halftone and
 hatching instead of gradients. Every game has its own technique within that family. These rules
 are binding for the landing page, every game, the shop screens and `/debug`.
 
 ## 1. Foundation (`shared/shell.js`, `Shell.art`)
 
-**Palette.** One family of 16 tones, defined once in `Shell.art.pal` and as CSS tokens in
-`shared/style.css`. Games use a subset plus at most two accents from the same family.
+**Palette.** Everything is printed on black paper. The page tokens in `shared/style.css` are
+`--paper #131116`, `--paper-2 #1d1a22`, `--card #1b1820`, `--ink #efe7d7` (cream ink),
+`--ink-soft #a8a1ae`, and the print colours `--pink #ff5e95`, `--blue #6f96ff`, `--yellow #ffd056`,
+`--green #3dcc8c`, `--orange #ff8d58`. Canvas games read them through `Shell.palette()`.
+The shared family of 16 tones in `Shell.art.pal` is the source for game-specific accents.
+Games use a subset plus at most two accents from the same family. Grain is a light speckle
+blended with `screen`, so it reads like fibres in dark stock.
 
 | Tone | Value | Use |
 | --- | --- | --- |
