@@ -1,0 +1,69 @@
+name: Refresh guessing pool
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Pool size to aim for"
+        default: "3300"
+  push:
+    branches: ["main"]
+    paths:
+      - "tools/guess-pipeline/**"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "guess-pool"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Checkout current pool
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: pool
+          path: old-pool
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        working-directory: tools/guess-pipeline
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Fetch domain lists
+        working-directory: tools/guess-pipeline
+        run: |
+          mkdir -p lists
+          curl -sSfL -o lists/tranco.zip https://tranco-list.eu/top-1m.csv.zip
+          unzip -o -q lists/tranco.zip -d lists
+          curl -sSfL -o lists/block.txt https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
+          curl -sSfL -o lists/urlhaus.txt https://urlhaus.abuse.ch/downloads/hostfile/ || true
+      - name: Build pool
+        working-directory: tools/guess-pipeline
+        run: node build.mjs --old ../../old-pool --out ../../new-pool --target "${{ github.event.inputs.target || '3300' }}"
+      - name: Publish pool branch
+        run: |
+          cd new-pool
+          git init -q -b pool
+          git config user.name "Labtoso"
+          git config user.email "235880825+Labtoso@users.noreply.github.com"
+          git add -A
+          git commit -q -m "pool: refresh $(date -u +%Y-%m-%d)"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" pool
+  deploy:
+    needs: build
+    uses: ./.github/workflows/static.yml

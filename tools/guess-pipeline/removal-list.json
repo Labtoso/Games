@@ -1,0 +1,5 @@
+{
+  "note": "Sites listed here are never captured again and are removed from the pool on the next run. Add a domain (without www) or a pool id.",
+  "domains": [],
+  "ids": []
+}

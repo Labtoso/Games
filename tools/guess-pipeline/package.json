@@ -1,0 +1,9 @@
+{
+  "name": "guess-pipeline",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "playwright": "1.49.1",
+    "sharp": "0.33.5"
+  }
+}
