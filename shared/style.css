@@ -170,3 +170,5 @@ body.game-page { height: 100vh; height: 100dvh; display: flex; flex-direction: c
 .overlay .shop-head { display: flex; justify-content: center; margin: 0 0 10px; }
 .overlay .ship-preview { position: static; display: block; width: 180px; height: 120px; border: 2px solid var(--ink); background: #0d0b1a; }
 @media (max-height: 640px) { .overlay .ship-preview { width: 120px; height: 80px; } .overlay .shop.two { max-height: 44vh; } }
+.game p.how { font-size: 15px; color: var(--ink-soft); border-left: 2px solid var(--pink); padding-left: 10px; }
+.game p.how b { color: var(--ink); }
