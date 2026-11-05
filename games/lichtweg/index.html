@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lichtweg · games.labtoso.de</title>
+<meta name="theme-color" content="#f2ecdf">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/style.css">
+</head>
+<body class="game-page" data-game="lichtweg">
+<header class="bar">
+  <a class="back" href="../../">← Spielhalle</a>
+  <h1>Lichtweg</h1>
+  <div class="scores"><span>Punkte <b data-score>0</b></span><span>Rekord <b data-best>0</b></span></div>
+</header>
+<main class="stage">
+  <canvas id="c" aria-label="Spielfeld Lichtweg"></canvas>
+  <div class="overlay" hidden><div class="card"><h2></h2><p></p><button class="btn" type="button"></button></div></div>
+</main>
+<footer class="hint"><span>Spiegel antippen, um sie zu drehen.</span><span class="keys"><kbd>R</kbd> Level zurücksetzen</span></footer>
+<script src="../../shared/shell.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
