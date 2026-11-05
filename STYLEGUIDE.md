@@ -1,63 +1,147 @@
-# Styleguide: Grafik und Texturen
+# Style guide
 
-Die Spielhalle sieht aus wie ein Siebdruck auf Papier: wenige kräftige Farben, leichter Druckversatz, Rasterpunkte statt Verläufe. Diese Regeln gelten für die Startseite und für jedes Spiel.
+The arcade looks like print on paper: a few strong inks, slight misregistration, halftone and
+hatching instead of gradients. Every game has its own technique within that family. These rules
+are binding for the landing page, every game, the shop screens and `/debug`.
 
-## 1. Farben
+## 1. Foundation (`shared/shell.js`, `Shell.art`)
 
-Nur die Tokens aus `shared/style.css` verwenden, im Canvas über `Shell.palette()`.
+**Palette.** One family of 16 tones, defined once in `Shell.art.pal` and as CSS tokens in
+`shared/style.css`. Games use a subset plus at most two accents from the same family.
 
-| Token | Hell | Dunkel | Einsatz |
-| --- | --- | --- | --- |
-| `--paper` | `#f2ecdf` | `#1b1922` | Grund |
-| `--ink` | `#23202c` | `#efe8da` | Konturen, Text |
-| `--pink` | `#ff4d8d` | `#ff6a9f` | Spieler, Licht, Druckversatz |
-| `--blue` | `#2b62c9` | `#6f97ff` | Wasser, zweite Druckfarbe |
-| `--yellow` | `#ffc93c` | `#ffd25e` | Belohnung, Sterne |
-| `--green` | `#12a167` | `#3fcf8e` | Erfolg, Wachstum |
-| `--orange` | `#ff7a3d` | `#ff905c` | Gefahr, Hitze, Feuer |
+| Tone | Value | Use |
+| --- | --- | --- |
+| paper / paper2 / paperShade | `#f1eadb` `#e5dcc8` `#cfc3aa` | grounds, cards, shaded paper |
+| ink / inkSoft | `#221f2b` `#5f5967` | outlines, text |
+| night / night2 / nightLine | `#121019` `#1d1a26` `#3a3546` | dark grounds (Starwatch, Sonar) |
+| pink / pinkDeep | `#f2457f` `#b8285a` | player, light, misregistration |
+| blue / blueDeep | `#2a5fc4` `#1b3e86` | water, second ink |
+| yellow / yellowDeep | `#f6bf31` `#c48c12` | rewards, currency |
+| green / greenDeep | `#139a63` `#0c6a44` | success, growth |
+| orange | `#f2702f` | danger, heat |
+| light | `#fff8ea` | highlights |
 
-Nachtspiele (Echolot, Sternwacht) haben eine eigene, feste Nachtpalette im Spielcode. Sie nutzen dieselbe Logik: dunkler Grund, höchstens drei Leuchtfarben plus Papierweiß.
+**Light.** Always from the top left (`Shell.art.light`). Highlights sit top left, halftone gets
+denser and offset shadows fall to the bottom right (3 px, no blur: `Shell.art.shadow`).
 
-## 2. Formen und Konturen
+**Line weights.** Three steps, multiplied by the device pixel ratio by the stage transform:
+outline 2.5 px, detail 1.5 px, fine 0.75 px (`Shell.art.lw`).
 
-- Konturen in Tinte, 1,5 bis 2,5 px, runde Enden und Ecken.
-- Jede wichtige Fläche bekommt **Druckversatz**: die Form zuerst in einer zweiten Farbe 2 bis 4 px nach rechts unten, darüber die Hauptfarbe (`Shell.riso`).
-- Harte, versetzte Schatten statt weicher Schlagschatten (Karten, Knöpfe: `box-shadow: 5px 5px 0`).
+**Grain.** Procedural paper grain and ink wear (`Shell.tex.grain`, `Shell.tex.wear`) are
+painted once into tiles and cached. The grain is offset with the camera, never re-randomised per
+frame, so it does not flicker.
 
-## 3. Schattierung und Texturen
+**Type.** System fonts only, nothing is loaded from outside: a book serif stack for titles
+(Iowan Old Style, Palatino, Georgia), the system sans for text, and the system monospace for
+HUD and numbers.
 
-Alle Texturen entstehen im Code (`Shell.tex`), es gibt keine Bilddateien.
+## 2. Style per game
 
-- **Rasterpunkte** (`halftoneCircle`, `halftoneRect`) für Schatten und Volumen. Nie weiche Verläufe auf Objekten.
-- **Schraffur** (`hatch`) für trockene, raue oder unfertige Flächen.
-- **Papierkorn** (`grain`) liegt als letzte Ebene über jedem Frame, im Dunkelmodus halb so stark.
-- **Rauschen** (`noiseField`, `nebula`) für Gestein und Weltraumnebel, ausgegeben als Rasterpunkte.
-- Teure Flächen (Böden, Spielfelder) werden mit `cached` einmal gezeichnet und wiederverwendet.
-- Glühen nur für Licht und Energie (Strahl, Kristalle), als mehrere halbtransparente Linien.
+| Game (path) | Style |
+| --- | --- |
+| Orbit (`umlauf`) | Risograph on cream paper. Planets are halftone spheres lit from the top left, with orbit rings in dashed ink and a pink misregistration layer. |
+| Sonar (`echolot`) | Chalk and ink on blueprint paper. The cave exists only as stipple where an echo returned; pings are slightly uneven hand-drawn rings, metal shows as hatched yellow plates. No glow. |
+| Prism (`lichtweg`) | Etched glass on a drafting board. Mirrors and crystals are cut shapes with bevel highlights; the beam is a solid ink line in its colour. |
+| Rainmaker (`wolkenhirte`) | Gouache on rough paper, seen from above. Fields are hatched patches that fill with colour as they bloom; clouds are soft paper cut-outs with an offset shadow. |
+| Switchyard (`weichenwerk`) | Linocut factory plan. Belts are thick cut lines with tread marks, parcels are printed blocks with a symbol, chutes are tinted bins. |
+| Starwatch (`sternwacht`) | Two-ink screen print on black stock. Halftone nebula, ships with pink and paper misregistration, every upgrade visible as a printed part on the ship. |
+| Rally (`schlagabtausch`) | Letterpress sports poster. Court in halftone ink, paddles as heavy bars, the score in big serif numerals. |
+| Mosaic (`mosaik`) | Glazed ceramic tiles. Grout lines, glaze highlight top left, and a colour mosaic that appears when the puzzle is solved. |
+| What does it sell? (`guess`) | Newsprint frame with registration marks and a pink offset. Grain sits on the frame, never on the screenshot. |
 
-## 4. Schrift
+## 3. Never (the AI-slop list)
 
-- Titel und große Zahlen: **Fraunces** (weich, gern kursiv für Ausrufe wie „Alles im Licht“).
-- Oberfläche, Werte, Hinweise: **IBM Plex Mono**, 11 bis 13 px.
-- Anzeigen im Spiel in Großbuchstaben nur bei Nachtspielen (Instrumentenoptik).
+- Smooth empty areas without any structure.
+- Generic two-colour gradients as backgrounds, vignettes made from radial gradients.
+- Glow and bloom everywhere, neon kit looks, lens flares.
+- Clipart shapes, emoji used as graphics, stock icons, decorative blobs.
+- Decoration without a job.
+- Cards with hard drop shadows and rounded pill tags as a layout crutch.
+- Text that explains what is already visible, "Welcome to…" intros, feature lists, marketing words
+  ("immersive", "epic"), tooltips for the obvious. Controls go in one short line, in the start or
+  pause menu. The landing page has one short "How to play" per game because the owner asked for it.
 
-## 5. Bewegung
+## 4. Animation
 
-- Auftauchen mit `ease.outBack`, Verschwinden mit `ease.inOut`, Belohnungen mit `ease.outElastic`.
-- Nichts springt hart von 0 auf 1: Drehungen, Banner und Zellen werden immer getweent.
-- Partikel sind kleine Quadrate (Druckpunkte), keine weichen Kreise.
-- Treffer und Fehler: kurzer Bildschirmwackler, nie länger als 0,5 s.
+- Easing from `Shell.ease`: `outCubic`, `inOutQuad`, `inOut`, `outBack`, `outElastic`. Nothing in UI,
+  hits, jumps or banners moves linearly.
+- Squash and stretch on jumps, landings, hits and pickups (scale x and y in opposite directions and
+  ease back).
+- Anticipation before big actions (wind-up, short pause) and overshoot then settle after them.
+- Particles only for impact, destruction, pickups and engines. They come from a fixed pool
+  (`Shell.particles(cap)`, `burst`, `spark`) so the main loop does not allocate.
+- Screen shake only for big events, short, decaying, capped. Multiply by `Shell.shakeScale`.
+- Hit feedback: `Shell.hitstop(30–80 ms)`, a light flash on the hit object, a matching sound.
+- `requestAnimationFrame` with delta time (`Shell.loop`, capped step). Expensive textures are
+  pre-rendered.
+- `prefers-reduced-motion`: `Shell.reduced` is true, shake is 0, particles drop to a quarter,
+  flashes and blinking are off, transitions become short fades. Gameplay stays the same.
 
-## 6. Ton
+## 5. Language and text
 
-- Alle Klänge werden live erzeugt (`Shell.sound`), kurz und leise, mit Stummschalter in jeder Kopfzeile.
-- Erfolg steigt in der Tonhöhe, Fehler fällt.
+- All visible text is English, written like a good indie game: short, plain, no puns for their own
+  sake. Buttons: Play, Shop, Resume, Retry, Easy / Normal / Hard.
+- Each game keeps its strings in one `T` object at the top of `game.js`.
+- Folder names stay German so no link breaks; the English names are display names only.
 
-## 7. Illustrationen
+## 6. Difficulty
 
-- Kartenbilder auf der Startseite sind handgeschriebene SVGs mit höchstens drei Farben plus Tinte.
-- Hinter jeder Illustration liegt ein feines Punktraster.
+- `Shell.difficulty(slug)` shows Easy / Normal / Hard in the start and game over menus. Default is
+  Normal. The choice is stored under `<slug>:diff`; old values `leicht` and `schwer` are read as
+  `easy` and `hard`.
+- Each game has one config object (`D()` / `DF()` / `DIFF`) with what changes: speed, damage,
+  lives, counts, time limits, blur strength, prices.
+- Best scores are stored per difficulty under `<slug>:best:<diff>`. The old key `<slug>:best` is
+  read as Normal and never removed.
+- Rally: the computer's skill is the difficulty (old `schlagabtausch:level` values `leicht`,
+  `mittel`, `schwer` are migrated). Prism: difficulty sets the number of decoy mirrors and how many
+  extra moves still earn two stars.
 
-## 8. Fremde Dateien
+## 7. Debug
 
-Es werden keine fremden Grafiken, Schriften oder Klänge eingebunden, außer den Schriften von Google Fonts (SIL Open Font License). Falls später doch fremde Dateien dazukommen, nur mit Lizenz CC0 und mit Eintrag in einer `LICENSES.md`.
+Open `/debug` to set options, or pass them in the URL of any game:
+
+`?debug=1&level=3&diff=hard&god=1&fps=1&hitbox=1&money=500&speed=0.5&textures=0`
+
+What does it sell? also takes `solution=1`, `site=<id>`, `stage=<n>` and `resetseen=1`.
+`debug=0` turns debug off. While debug is on, a small DEBUG box shows the frame rate and
+<kbd>N</kbd> skips ahead. Every game key is written to `debug:<key>` instead, so normal saves
+and best scores are never touched. Only `muted` and `debug` itself are shared.
+
+## 8. Storage keys
+
+All keys are prefixed with `labtoso-games:` in `localStorage`. New fields are only ever added,
+with defaults; old ones are still read.
+
+| Key | Content |
+| --- | --- |
+| `muted` | sound off (shared by all games) |
+| `debug` | debug settings |
+| `<slug>:diff` | `easy`, `normal` or `hard` |
+| `<slug>:best:<diff>` | best score per difficulty (`<slug>:best` is the old Normal value) |
+| `lichtweg:level`, `lichtweg:score`, `lichtweg:stars` | Prism progress |
+| `mosaik:score`, `mosaik:done:<diff>` | Mosaic score and solved puzzles (old `:leicht`, `:schwer` read too) |
+| `schlagabtausch:mode`, `:extras`, `:level` | Rally settings |
+| `sternwacht:ship` | `{ v: 1, shards, up }`, Starwatch currency and upgrade tiers |
+| `guess:seed` | the player's shuffle seed |
+| `guess:seen` | first 8 hex digits of every site id already shown |
+| `guess:reported` | ids the player reported, never shown again |
+| `guess:mode`, `guess:cycle` | answer mode, how often the whole pool was played through |
+
+## 9. Starwatch shop
+
+Prices come from one table (`UPG` in `sternwacht/game.js`): tier n costs `base × growth^n`,
+rounded to 5, times 0.85 / 1 / 1.2 for Easy / Normal / Hard. Shards drop per enemy type
+(`SHARD_DROP`). B, Space or the Shop button open the shop and pause everything; B, Escape or
+Resume close it, followed by a short countdown. Space does not fire, the ship shoots on its own,
+and X drops a bomb.
+
+## 10. What does it sell?
+
+The pool is built by `tools/guess-pipeline` (see its README) as a GitHub Action and published from
+the `pool` branch under `/pool/`. Format: `meta.json`, `categories.json`, 32 index shards
+`i/<n>.json` with `{ id, c, r, d, t, a }` and screenshots `s/<id>.webp`. Domain and title are
+XOR-encoded, images only carry a random id. Each player gets a seed; shards and entries are
+ordered by a hash of seed and id, so every player sees a different order, new entries mix in on
+their own, and nothing repeats until the whole pool has been seen. Removal requests go into
+`tools/guess-pipeline/removal-list.json`.
