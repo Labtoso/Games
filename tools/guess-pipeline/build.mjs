@@ -15,7 +15,7 @@ const OUT = args.out || 'out';
 const TARGET = Number(args.target || 3300);
 const SHARDS = 32;
 const CHURN = 0.15; // share of old entries replaced per run
-const CONCURRENCY = Number(args.concurrency || 10);
+const CONCURRENCY = Number(args.concurrency || 14);
 const MAX_MINUTES = Number(args.minutes || 300);
 const LISTS = args.lists || 'lists';
 const LOCAL = args.local || ''; // test mode: load <local><domain>.html instead of the real site
@@ -127,8 +127,22 @@ async function dismissOverlays(page) {
   }).catch(() => {});
 }
 
+// a page can hang in evaluate() or screenshot() (endless scripts, dialogs), so every capture gets a hard limit
+const CAPTURE_MS = 45000;
 async function capture(ctx, domain) {
   const page = await ctx.newPage();
+  page.on('dialog', (d) => d.dismiss().catch(() => {}));
+  let timer;
+  const limit = new Promise((resolve) => { timer = setTimeout(() => resolve({ fail: 'timeout' }), CAPTURE_MS); });
+  try {
+    return await Promise.race([grab(page, domain), limit]);
+  } finally {
+    clearTimeout(timer);
+    await Promise.race([page.close().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]);
+  }
+}
+
+async function grab(page, domain) {
   try {
     const res = await page.goto(LOCAL ? LOCAL + domain + '.html' : 'https://' + domain, { waitUntil: 'domcontentloaded', timeout: 20000 });
     if (!res || res.status() >= 400) return { fail: 'status ' + (res ? res.status() : 'none') };
@@ -148,8 +162,6 @@ async function capture(ctx, domain) {
     return { meta, png };
   } catch (e) {
     return { fail: String(e.message || e).slice(0, 80) };
-  } finally {
-    await page.close().catch(() => {});
   }
 }
 
@@ -206,6 +218,7 @@ async function main() {
   async function worker() {
     while (fresh.length < need && next < candidates.length && (Date.now() - started) / 60000 < MAX_MINUTES) {
       const c = candidates[next++];
+      if (next % 250 === 0) log('tried', next, 'new', fresh.length, JSON.stringify(reasons));
       const cap = await capture(ctx, c.domain);
       let why = cap.fail ? 'load' : await judge(c.domain, cap);
       let cat = null;
@@ -218,8 +231,10 @@ async function main() {
       if (fresh.length % 50 === 0) log('new', fresh.length, '/', need, 'tried', next, JSON.stringify(reasons));
     }
   }
-  await Promise.all(Array.from({ length: CONCURRENCY }, worker));
-  await browser.close();
+  // workers stop at the deadline; if one is still stuck a few minutes later, write what we have anyway
+  const grace = Math.max(0, MAX_MINUTES * 60000 - (Date.now() - started)) + 4 * 60000;
+  await Promise.race([Promise.all(Array.from({ length: CONCURRENCY }, worker)), new Promise((r) => setTimeout(r, grace))]);
+  await Promise.race([browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 20000))]);
   log('new total', fresh.length, 'tried', next, JSON.stringify(reasons));
 
   const all = [...keep, ...fresh];
@@ -236,4 +251,4 @@ async function main() {
   log('pool', all.length, 'entries,', (bytes / 1048576).toFixed(1), 'MB of screenshots');
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+main().then(() => process.exit(0), (e) => { console.error(e); process.exit(1); });
