@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sternwacht · games.labtoso.de</title>
+<meta name="theme-color" content="#f2ecdf">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,0..100,0..1;1,9..144,400..700,0..100,0..1&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/style.css">
+</head>
+<body class="game-page" data-game="sternwacht">
+<header class="bar">
+  <a class="back" href="../../">← Spielhalle</a>
+  <h1>Sternwacht</h1>
+  <button class="mute" type="button" data-mute>Ton an</button>
+  <div class="scores"><span>Punkte <b data-score>0</b></span><span>Rekord <b data-best>0</b></span></div>
+</header>
+<main class="stage">
+  <canvas id="c" aria-label="Spielfeld Sternwacht"></canvas>
+  <div class="overlay" hidden><div class="card"><h2></h2><p></p><button class="btn" type="button"></button></div></div>
+</main>
+<footer class="hint"><span>Am Handy: Finger ziehen, Bombe unten rechts.</span><span class="keys"><kbd>WASD</kbd>/<kbd>Pfeile</kbd> fliegen · <kbd>Shift</kbd> langsam · <kbd>B</kbd> Bombe</span></footer>
+<script src="../../shared/shell.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
