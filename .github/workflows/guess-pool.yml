@@ -53,10 +53,10 @@ jobs:
         working-directory: tools/guess-pipeline
         run: |
           mkdir -p lists
-          curl -sSfL -o lists/tranco.zip https://tranco-list.eu/top-1m.csv.zip
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 5 -o lists/tranco.zip https://tranco-list.eu/top-1m.csv.zip
           unzip -o -q lists/tranco.zip -d lists
-          curl -sSfL -o lists/block.txt https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
-          curl -sSfL -o lists/urlhaus.txt https://urlhaus.abuse.ch/downloads/hostfile/ || true
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 5 -o lists/block.txt https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 5 -o lists/urlhaus.txt https://urlhaus.abuse.ch/downloads/hostfile/ || true
       - name: Collect sites
         working-directory: tools/guess-pipeline
         run: node build.mjs --old ../../old-pool --out ../../part --target "${{ github.event.inputs.target || '3300' }}" --part ${{ matrix.part }} --parts 8 --minutes 170
@@ -90,8 +90,8 @@ jobs:
         working-directory: tools/guess-pipeline
         run: |
           mkdir -p lists
-          curl -sSfL -o lists/block.txt https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
-          curl -sSfL -o lists/urlhaus.txt https://urlhaus.abuse.ch/downloads/hostfile/ || true
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 5 -o lists/block.txt https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
+          curl -sSfL --retry 5 --retry-all-errors --retry-delay 5 -o lists/urlhaus.txt https://urlhaus.abuse.ch/downloads/hostfile/ || true
       - uses: actions/download-artifact@v4
         with:
           pattern: part-*
@@ -110,4 +110,5 @@ jobs:
           git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" pool
   deploy:
     needs: build
+    if: ${{ !cancelled() && needs.build.result == 'success' }}
     uses: ./.github/workflows/static.yml
