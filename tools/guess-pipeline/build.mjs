@@ -243,7 +243,10 @@ async function collect(need, taken) {
       if (!why) { cat = classify(cap.meta); if (!cat) why = 'unclear'; }
       if (why) { reasons[why] = (reasons[why] || 0) + 1; continue; }
       const id = crypto.randomBytes(5).toString('hex');
-      await sharp(cap.png).resize(1024, 640).webp({ quality: 56, effort: 5 }).toFile(path.join(OUT, 's', id + '.webp'));
+      // stay under 60 KB: busy pages get a lower quality
+      let buf;
+      for (const q of [56, 46, 38, 30]) { buf = await sharp(cap.png).resize(1024, 640).webp({ quality: q, effort: 5 }).toBuffer(); if (buf.length <= 60 * 1024) break; }
+      fs.writeFileSync(path.join(OUT, 's', id + '.webp'), buf);
       const title = (cap.meta.ogTitle || cap.meta.title || '').trim().slice(0, 90);
       fresh.push({ id, c: cat.id, r: rankBucket(c.rank), d: enc(c.domain), t: enc(title), a: now });
       if (fresh.length % 50 === 0) log('new', fresh.length, '/', need, 'tried', next, JSON.stringify(reasons));
@@ -280,7 +283,11 @@ async function main() {
     return;
   }
 
-  for (const e of keep) fs.copyFileSync(path.join(OLD, 's', e.id + '.webp'), path.join(OUT, 's', e.id + '.webp'));
+  for (const e of keep) {
+    const src = path.join(OLD, 's', e.id + '.webp'), dst = path.join(OUT, 's', e.id + '.webp');
+    if (fs.statSync(src).size <= 60 * 1024) { fs.copyFileSync(src, dst); continue; }
+    fs.writeFileSync(dst, await sharp(src).webp({ quality: 38, effort: 5 }).toBuffer());
+  }
   log('kept', keep.length, 'dropped', drop);
   let fresh = [];
   if (MERGE) {

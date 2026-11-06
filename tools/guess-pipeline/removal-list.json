@@ -1,5 +1,17 @@
 {
   "note": "Sites listed here are never captured again and are removed from the pool on the next run. Add a domain (without www) or a pool id.",
-  "domains": [],
+  "domains": [
+    "eepurl.com",
+    "fiege.com",
+    "funnyjunk.com",
+    "huntonak.com",
+    "iobit.com",
+    "linkbacklink.shop",
+    "paydayloanstennessee.com",
+    "playtoys.tv",
+    "seeclickfix.com",
+    "technicolor.com",
+    "worldtimebuddy.com"
+  ],
   "ids": []
 }
