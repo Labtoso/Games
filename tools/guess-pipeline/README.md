@@ -63,3 +63,9 @@ node build.mjs --out out --target 50
 
 `--old <dir>` continues from an existing pool, `--concurrency`, `--minutes` and `--local <url>`
 (load `<url><domain>.html` instead of the real site) help with testing.
+
+The Action splits the work over 8 runners: `--part <i> --parts 8` collects one slice of the
+Tranco list into `<out>/fresh.json` plus screenshots, and `--merge dirA,dirB,...` joins the
+slices with the old pool. Only about one site in eighteen passes all filters, so a single runner
+cannot reach 3,000 in its time limit. Every page has a hard 45 s limit and the browser is
+restarted every 400 pages or after a run of timeouts.

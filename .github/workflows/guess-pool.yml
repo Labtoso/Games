@@ -23,9 +23,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
+  # 8 runners collect new sites in parallel, each from its own slice of the Tranco list
+  collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 340
+    timeout-minutes: 200
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@v4
         with:
@@ -52,9 +57,48 @@ jobs:
           unzip -o -q lists/tranco.zip -d lists
           curl -sSfL -o lists/block.txt https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
           curl -sSfL -o lists/urlhaus.txt https://urlhaus.abuse.ch/downloads/hostfile/ || true
-      - name: Build pool
+      - name: Collect sites
         working-directory: tools/guess-pipeline
-        run: node build.mjs --old ../../old-pool --out ../../new-pool --target "${{ github.event.inputs.target || '3300' }}"
+        run: node build.mjs --old ../../old-pool --out ../../part --target "${{ github.event.inputs.target || '3300' }}" --part ${{ matrix.part }} --parts 8 --minutes 170
+      - uses: actions/upload-artifact@v4
+        with:
+          name: part-${{ matrix.part }}
+          path: part
+          retention-days: 2
+
+  build:
+    needs: collect
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Checkout current pool
+        uses: actions/checkout@v4
+        continue-on-error: true
+        with:
+          ref: pool
+          path: old-pool
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install
+        working-directory: tools/guess-pipeline
+        run: npm install --no-audit --no-fund
+      - name: Fetch block lists
+        working-directory: tools/guess-pipeline
+        run: |
+          mkdir -p lists
+          curl -sSfL -o lists/block.txt https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts
+          curl -sSfL -o lists/urlhaus.txt https://urlhaus.abuse.ch/downloads/hostfile/ || true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: part-*
+          path: parts
+      - name: Merge pool
+        working-directory: tools/guess-pipeline
+        run: node build.mjs --old ../../old-pool --out ../../new-pool --target "${{ github.event.inputs.target || '3300' }}" --merge "$(ls -d ../../parts/part-* | paste -sd, -)"
       - name: Publish pool branch
         run: |
           cd new-pool

@@ -16,6 +16,11 @@ const TARGET = Number(args.target || 3300);
 const SHARDS = 32;
 const CHURN = 0.15; // share of old entries replaced per run
 const CONCURRENCY = Number(args.concurrency || 14);
+// parallel runs: --part i --parts n collects a share of new sites into <out>/fresh.json,
+// --merge dirA,dirB,... joins those shares with the old pool into the published format
+const PART = args.part != null ? Number(args.part) : null;
+const PARTS = Number(args.parts || 1);
+const MERGE = args.merge ? args.merge.split(',').filter(Boolean) : null;
 const MAX_MINUTES = Number(args.minutes || 300);
 const LISTS = args.lists || 'lists';
 const LOCAL = args.local || ''; // test mode: load <local><domain>.html instead of the real site
@@ -127,24 +132,35 @@ async function dismissOverlays(page) {
   }).catch(() => {});
 }
 
-// a page can hang in evaluate() or screenshot() (endless scripts, dialogs), so every capture gets a hard limit
+// a page can hang in evaluate() or screenshot() (endless scripts, dialogs), and a worn-out browser can hang in
+// newPage(), so the whole capture gets a hard limit
 const CAPTURE_MS = 45000;
 async function capture(ctx, domain) {
-  const page = await ctx.newPage();
-  page.on('dialog', (d) => d.dismiss().catch(() => {}));
-  let timer;
+  let page = null, timer;
   const limit = new Promise((resolve) => { timer = setTimeout(() => resolve({ fail: 'timeout' }), CAPTURE_MS); });
+  const work = (async () => {
+    page = await ctx.newPage();
+    page.on('dialog', (d) => d.dismiss().catch(() => {}));
+    return grab(page, domain);
+  })().catch((e) => ({ fail: String(e.message || e).slice(0, 80) }));
   try {
-    return await Promise.race([grab(page, domain), limit]);
+    return await Promise.race([work, limit]);
   } finally {
     clearTimeout(timer);
-    await Promise.race([page.close().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]);
+    if (page) await Promise.race([page.close().catch(() => {}), new Promise((r) => setTimeout(r, 5000))]);
+    else work.then(() => page && page.close().catch(() => {}));
   }
 }
 
 async function grab(page, domain) {
   try {
-    const res = await page.goto(LOCAL ? LOCAL + domain + '.html' : 'https://' + domain, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    const go = (u) => page.goto(u, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    let res;
+    try { res = await go(LOCAL ? LOCAL + domain + '.html' : 'https://' + domain); } catch (e) {
+      // many sites only answer on www.
+      if (LOCAL || domain.startsWith('www.') || !/ERR_NAME|ERR_CONNECTION|ERR_CERT|ERR_SSL/.test(String(e.message))) throw e;
+      res = await go('https://www.' + domain);
+    }
     if (!res || res.status() >= 400) return { fail: 'status ' + (res ? res.status() : 'none') };
     await page.waitForTimeout(2600);
     await dismissOverlays(page);
@@ -185,42 +201,44 @@ async function judge(domain, cap) {
 }
 
 // ---------- main ----------
-async function main() {
-  fs.mkdirSync(path.join(OUT, 's'), { recursive: true });
-  fs.mkdirSync(path.join(OUT, 'i'), { recursive: true });
-  // keep old entries, minus churn and removals
-  let keep = [];
-  if (OLD) {
-    for (let i = 0; i < SHARDS; i++) {
-      const f = path.join(OLD, 'i', i + '.json');
-      if (fs.existsSync(f)) keep.push(...JSON.parse(fs.readFileSync(f, 'utf8')));
-    }
-    keep = keep.filter((e) => !removedIds.has(e.id) && !isBlockedDomain(dec(e.d)) && CATEGORIES.some((c) => c.id === e.c));
-    keep.sort((a, b) => a.a - b.a);
-    const drop = Math.floor(keep.length * CHURN);
-    keep = keep.slice(drop);
-    for (const e of keep) fs.copyFileSync(path.join(OLD, 's', e.id + '.webp'), path.join(OUT, 's', e.id + '.webp'));
-    log('kept', keep.length, 'dropped', drop);
-  }
-  const taken = new Set(keep.map((e) => dec(e.d)));
-  const need = Math.max(0, TARGET - keep.length);
-  const tranco = loadTranco();
-  const candidates = sampleCandidates(tranco, Math.ceil(need * 7) + 50, taken);
-  log('need', need, 'candidates', candidates.length);
+const hash = (str) => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+const CTX_OPTS = { viewport: { width: 1280, height: 800 }, locale: 'en-US', timezoneId: 'America/New_York', userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', javaScriptEnabled: true };
 
+async function openBrowser() {
   const browser = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});
-  const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'en-US', timezoneId: 'America/New_York', userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36', javaScriptEnabled: true });
-  await ctx.route('**/*', (route) => (['media', 'websocket'].includes(route.request().resourceType()) ? route.abort() : route.continue()));
+  const ctx = await browser.newContext(CTX_OPTS);
+  await ctx.route('**/*', (route) => (['media', 'websocket'].includes(route.request().resourceType()) ? route.abort() : route.continue()).catch(() => {}));
+  return { browser, ctx };
+}
+const closeBrowser = (b) => Promise.race([b.browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 20000))]);
+
+// visits candidates until `need` new entries are found or time is up
+async function collect(need, taken) {
+  const tranco = loadTranco().filter((e) => PART == null || hash(e.domain) % PARTS === PART);
+  const candidates = sampleCandidates(tranco, Math.ceil(need * 25) + 50, taken);
+  log('need', need, 'candidates', candidates.length);
+  let session = await openBrowser();
+  let used = 0, stalls = 0, restarting = null;
+  // a fresh browser every 400 pages, or after a run of timeouts, keeps memory and hung tabs in check
+  async function restart() {
+    if (!restarting) restarting = (async () => { const old = session; session = await openBrowser(); used = 0; stalls = 0; closeBrowser(old); log('browser restarted'); })().finally(() => { restarting = null; });
+    return restarting;
+  }
   const fresh = [];
   const reasons = {};
   const now = Math.floor(Date.now() / 1000);
   let next = 0;
+  const timeLeft = () => (Date.now() - started) / 60000 < MAX_MINUTES;
   async function worker() {
-    while (fresh.length < need && next < candidates.length && (Date.now() - started) / 60000 < MAX_MINUTES) {
+    while (fresh.length < need && next < candidates.length && timeLeft()) {
+      if (restarting) await restarting;
       const c = candidates[next++];
       if (next % 250 === 0) log('tried', next, 'new', fresh.length, JSON.stringify(reasons));
-      const cap = await capture(ctx, c.domain);
-      let why = cap.fail ? 'load' : await judge(c.domain, cap);
+      const cap = await capture(session.ctx, c.domain);
+      used++;
+      stalls = cap.fail === 'timeout' ? stalls + 1 : 0;
+      if (used >= 400 || stalls >= CONCURRENCY) await restart();
+      let why = cap.fail ? (cap.fail === 'timeout' ? 'timeout' : 'load') : await judge(c.domain, cap);
       let cat = null;
       if (!why) { cat = classify(cap.meta); if (!cat) why = 'unclear'; }
       if (why) { reasons[why] = (reasons[why] || 0) + 1; continue; }
@@ -234,9 +252,55 @@ async function main() {
   // workers stop at the deadline; if one is still stuck a few minutes later, write what we have anyway
   const grace = Math.max(0, MAX_MINUTES * 60000 - (Date.now() - started)) + 4 * 60000;
   await Promise.race([Promise.all(Array.from({ length: CONCURRENCY }, worker)), new Promise((r) => setTimeout(r, grace))]);
-  await Promise.race([browser.close().catch(() => {}), new Promise((r) => setTimeout(r, 20000))]);
+  await closeBrowser(session);
   log('new total', fresh.length, 'tried', next, JSON.stringify(reasons));
+  return fresh.slice();
+}
 
+async function main() {
+  fs.mkdirSync(path.join(OUT, 's'), { recursive: true });
+  // keep old entries, minus removals, and minus churn once the pool is full
+  let old = [];
+  if (OLD) {
+    for (let i = 0; i < SHARDS; i++) {
+      const f = path.join(OLD, 'i', i + '.json');
+      if (fs.existsSync(f)) old.push(...JSON.parse(fs.readFileSync(f, 'utf8')));
+    }
+  }
+  let keep = old.filter((e) => !removedIds.has(e.id) && !isBlockedDomain(dec(e.d)) && CATEGORIES.some((c) => c.id === e.c));
+  keep.sort((a, b) => a.a - b.a);
+  const drop = keep.length >= TARGET * 0.9 ? Math.floor(keep.length * CHURN) : 0;
+  keep = keep.slice(drop);
+  const taken = new Set(old.map((e) => dec(e.d)));
+  const need = Math.max(0, TARGET - keep.length);
+
+  if (PART != null) {
+    const fresh = await collect(Math.ceil(need / PARTS), taken);
+    fs.writeFileSync(path.join(OUT, 'fresh.json'), JSON.stringify(fresh));
+    return;
+  }
+
+  for (const e of keep) fs.copyFileSync(path.join(OLD, 's', e.id + '.webp'), path.join(OUT, 's', e.id + '.webp'));
+  log('kept', keep.length, 'dropped', drop);
+  let fresh = [];
+  if (MERGE) {
+    for (const dir of MERGE) {
+      const f = path.join(dir, 'fresh.json');
+      if (!fs.existsSync(f)) { log('missing part', dir); continue; }
+      for (const e of JSON.parse(fs.readFileSync(f, 'utf8'))) {
+        const d = dec(e.d);
+        if (taken.has(d) || !fs.existsSync(path.join(dir, 's', e.id + '.webp'))) continue;
+        taken.add(d);
+        fs.copyFileSync(path.join(dir, 's', e.id + '.webp'), path.join(OUT, 's', e.id + '.webp'));
+        fresh.push(e);
+      }
+      log('merged', dir, fresh.length);
+    }
+  } else {
+    fresh = await collect(need, taken);
+  }
+
+  fs.mkdirSync(path.join(OUT, 'i'), { recursive: true });
   const all = [...keep, ...fresh];
   const shards = Array.from({ length: SHARDS }, () => []);
   for (const e of all) shards[shardOf(e.id)].push(e);
