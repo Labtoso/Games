@@ -12,6 +12,8 @@
   const T = {
     title: 'Sonar', play: 'Dive', retry: 'Dive again', record: 'New best', lost: 'Hull breached',
     intro: 'Hold to steer, tap to ping. Pings cost battery and wake things up. Find the beacon.',
+    introTouch: 'Left thumb steers with the stick, the button pings. Pings cost battery and wake things up. Find the beacon.',
+    pingBtn: 'PING',
     over: (d, s, b) => `You reached <b>depth ${d}</b> with <b>${s}</b> points. Best: <b>${b}</b>.`,
     dock: (d) => `Dock · depth ${d} cleared`, dockInfo: (p, h, mh, b) => `<b>${p}</b> pearls. Hull ${h}/${mh}, battery ${b}%.`,
     next: (d, z) => `Dive to depth ${d}: ${z}`, full: 'Full',
@@ -318,8 +320,64 @@
   const keys = S.keys((k) => { if (k === ' ' && !ov.open) ping(); });
   const ptr = S.pointer(cv);
   let downAt = 0, downX = 0, downY = 0, moved = false;
-  ptr.onDown = (x, y) => { downAt = performance.now(); downX = x; downY = y; moved = false; };
-  ptr.onUp = (x, y) => { if (performance.now() - downAt < 230 && Math.hypot(x - downX, y - downY) < 14 && !moved) ping(); };
+  ptr.onDown = (x, y, e) => { if (e.pointerType === 'touch') return; downAt = performance.now(); downX = x; downY = y; moved = false; };
+  ptr.onUp = (x, y, e) => { if (e.pointerType === 'touch') return; if (performance.now() - downAt < 230 && Math.hypot(x - downX, y - downY) < 14 && !moved) ping(); };
+
+  // Touch: a floating stick for the left thumb and a ping button for the right one, both multi-touch
+  const touch = { on: matchMedia('(pointer: coarse)').matches, stick: null, btn: null, press: 0, ax: 0, ay: 0 };
+  const STICK_R = 46;
+  const btnPos = () => ({ x: st.w - 70, y: st.h - 78, r: 36 });
+  const restPos = () => ({ x: 82, y: st.h - 92 });
+  function tpos(e) { const r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+  cv.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch' || ov.open) return;
+    touch.on = true;
+    const p = tpos(e), b = btnPos();
+    if (Math.hypot(p.x - b.x, p.y - b.y) < b.r + 18) { touch.btn = e.pointerId; touch.press = 1; ping(); return; }
+    if (touch.stick) return;
+    // the base appears under the thumb, kept away from the edges
+    const bx = S.clamp(p.x, STICK_R + 14, st.w - STICK_R - 14), by = S.clamp(p.y, STICK_R + 80, st.h - STICK_R - 14);
+    touch.stick = { id: e.pointerId, bx, by, x: p.x, y: p.y, k: 0 };
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!touch.stick || e.pointerId !== touch.stick.id) return;
+    const p = tpos(e); touch.stick.x = p.x; touch.stick.y = p.y;
+  });
+  const tEnd = (e) => {
+    if (touch.stick && e.pointerId === touch.stick.id) touch.stick = null;
+    if (e.pointerId === touch.btn) touch.btn = null;
+  };
+  cv.addEventListener('pointerup', tEnd); cv.addEventListener('pointercancel', tEnd);
+  function stickVec() {
+    const s = touch.stick;
+    if (!s) return [0, 0];
+    let dx = (s.x - s.bx) / STICK_R, dy = (s.y - s.by) / STICK_R;
+    const m = Math.hypot(dx, dy);
+    if (m < 0.14) return [0, 0];
+    const k = Math.min(1, (m - 0.14) / 0.86) / m; // dead zone, then full range
+    return [dx * k, dy * k];
+  }
+  function drawTouch(w, h) {
+    const s = touch.stick, rest = restPos();
+    const bx = s ? s.bx : rest.x, by = s ? s.by : rest.y;
+    const [vx, vy] = stickVec();
+    ctx.save();
+    ctx.globalAlpha = s ? 0.85 : 0.35;
+    ctx.strokeStyle = C.rock; ctx.lineWidth = S.art.lw.detail; inkRing(bx, by, STICK_R, 7);
+    ctx.lineWidth = S.art.lw.fine; ctx.globalAlpha *= 0.5; inkRing(bx, by, STICK_R * 0.55, 11);
+    ctx.globalAlpha = s ? 0.9 : 0.4;
+    const kx = bx + vx * STICK_R, ky = by + vy * STICK_R;
+    ctx.fillStyle = C.sub; ctx.beginPath(); ctx.arc(kx, ky, 17, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = C.bg; ctx.beginPath(); ctx.arc(kx + 3, ky + 3, 7, 0, Math.PI * 2); ctx.fill(); // offset print shadow inside the knob
+    const b = btnPos(), sc = 1 - touch.press * 0.12, low = battery < pingCost();
+    ctx.translate(b.x, b.y); ctx.scale(sc, sc);
+    ctx.globalAlpha = touch.btn != null ? 1 : 0.75;
+    ctx.strokeStyle = low ? C.mine : C.exit; ctx.lineWidth = S.art.lw.outline; inkRing(0, 0, b.r, 3);
+    ctx.lineWidth = S.art.lw.fine; inkRing(0, 0, b.r * 0.62, 5); inkRing(0, 0, b.r * 0.3, 9);
+    ctx.fillStyle = low ? C.mine : C.exit; ctx.font = '700 11px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(T.pingBtn, 0, b.r + 14);
+    ctx.restore(); ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  }
 
   function updateCreatures(dt) {
     for (const c of creatures) {
@@ -353,6 +411,7 @@
 
   function update(dt) {
     t += dt;
+    touch.press = Math.max(0, touch.press - dt * 6);
     if (sub) { sub.sx = S.lerp(sub.sx, 1, Math.min(1, dt * 8)); sub.sy = S.lerp(sub.sy, 1, Math.min(1, dt * 8)); }
     if (banner) { banner.t += dt; if (banner.t > 2.6) banner = null; }
     lowWarn = Math.max(0, lowWarn - dt * 1.5);
@@ -364,12 +423,13 @@
       if (keys.has('ArrowRight') || keys.has('d') || keys.has('D')) ax += 1;
       if (keys.has('ArrowUp') || keys.has('w') || keys.has('W')) ay -= 1;
       if (keys.has('ArrowDown') || keys.has('s') || keys.has('S')) ay += 1;
-      if (ptr.down && performance.now() - downAt > 120) {
+      if (touch.stick) { const [vx, vy] = stickVec(); ax += vx; ay += vy; }
+      if (ptr.down && ptr.type !== 'touch' && performance.now() - downAt > 120) {
         const wx = ptr.x + camX, wy = ptr.y + camY;
         const dx = wx - sub.x, dy = wy - sub.y, d = Math.hypot(dx, dy);
         if (d > 10) { ax = dx / d; ay = dy / d; moved = true; }
       }
-      const al = Math.hypot(ax, ay) || 1;
+      const al = Math.max(1, Math.hypot(ax, ay)); // a half-pushed stick gives half thrust
       const acc = 420 * (1 + up.engine * 0.18);
       sub.vx += (ax / al) * acc * dt; sub.vy += (ay / al) * acc * dt;
       const drag = Math.exp(-2.1 * dt); sub.vx *= drag; sub.vy *= drag;
@@ -614,6 +674,7 @@
     // paper grain tied to the camera, so it moves with the map and never flickers
     S.tex.grain(ctx, w, h, C.rock, 0.35, -camX * 0.5, -camY * 0.5);
 
+    if (touch.on && state === 'play') drawTouch(w, h);
     if (state === 'play' || state === 'between') {
       ctx.font = '600 12px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textBaseline = 'middle';
       ctx.fillStyle = C.rock; ctx.fillText(`${T.depth} ${level}`, 16, 20);
@@ -639,7 +700,7 @@
   level = S.debug.on ? Math.max(1, S.debug.start) : 1; score = 0; pearls = 0; up = baseUp(); hull = up.maxHull; battery = 100;
   newLevel(); banner = null;
   setTimeout(() => { state = 'play'; ping(); state = 'menu'; battery = 100; }, 300);
-  ov.show(T.title, T.intro, T.play, startGame);
+  ov.show(T.title, touch.on ? T.introTouch : T.intro, T.play, startGame);
   diff.mount(ov);
 
   S.loop((dt) => { update(dt); draw(); });
