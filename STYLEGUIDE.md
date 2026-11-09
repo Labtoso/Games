@@ -44,14 +44,14 @@ HUD and numbers.
 
 | Game (path) | Style |
 | --- | --- |
-| Orbit (`umlauf`) | Risograph on cream paper. Planets are halftone spheres lit from the top left, with orbit rings in dashed ink and a pink misregistration layer. |
-| Sonar (`echolot`) | Chalk and ink on blueprint paper. The cave exists only as stipple where an echo returned; pings are slightly uneven hand-drawn rings, metal shows as hatched yellow plates. No glow. |
-| Prism (`lichtweg`) | Etched glass on a drafting board. Mirrors and crystals are cut shapes with bevel highlights; the beam is a solid ink line in its colour. |
-| Rainmaker (`wolkenhirte`) | Gouache on rough paper, seen from above. Fields are hatched patches that fill with colour as they bloom; clouds are soft paper cut-outs with an offset shadow. |
-| Switchyard (`weichenwerk`) | Linocut factory plan. Belts are thick cut lines with tread marks, parcels are printed blocks with a symbol, chutes are tinted bins. |
-| Starwatch (`sternwacht`) | Two-ink screen print on black stock. Halftone nebula, ships with pink and paper misregistration, every upgrade visible as a printed part on the ship. |
-| Rally (`schlagabtausch`) | Letterpress sports poster. Court in halftone ink, paddles as heavy bars, the score in big serif numerals. |
-| Mosaic (`mosaik`) | Glazed ceramic tiles. Grout lines, glaze highlight top left, and a colour mosaic that appears when the puzzle is solved. |
+| Orbit (`orbit`) | Risograph on cream paper. Planets are halftone spheres lit from the top left, with orbit rings in dashed ink and a pink misregistration layer. |
+| Sonar (`sonar`) | Chalk and ink on blueprint paper. The cave exists only as stipple where an echo returned; pings are slightly uneven hand-drawn rings, metal shows as hatched yellow plates. No glow. |
+| Prism (`prism`) | Etched glass on a drafting board. Mirrors and crystals are cut shapes with bevel highlights; the beam is a solid ink line in its colour. |
+| Rainmaker (`rainmaker`) | Gouache on rough paper, seen from above. Fields are hatched patches that fill with colour as they bloom; clouds are soft paper cut-outs with an offset shadow. |
+| Switchyard (`switchyard`) | Linocut factory plan. Belts are thick cut lines with tread marks, parcels are printed blocks with a symbol, chutes are tinted bins. |
+| Starwatch (`starwatch`) | Two-ink screen print on black stock. Halftone nebula, ships with pink and paper misregistration, every upgrade visible as a printed part on the ship. |
+| Rally (`rally`) | Letterpress sports poster. Court in halftone ink, paddles as heavy bars, the score in big serif numerals. |
+| Mosaic (`mosaic`) | Glazed ceramic tiles. Grout lines, glaze highlight top left, and a colour mosaic that appears when the puzzle is solved. |
 | What does it sell? (`guess`) | Newsprint frame with registration marks and a pink offset. Grain sits on the frame, never on the screenshot. |
 
 ## 3. Never (the AI-slop list)
@@ -87,7 +87,8 @@ HUD and numbers.
 - All visible text is English, written like a good indie game: short, plain, no puns for their own
   sake. Buttons: Play, Shop, Resume, Retry, Easy / Normal / Hard.
 - Each game keeps its strings in one `T` object at the top of `game.js`.
-- Folder names stay German so no link breaks; the English names are display names only.
+- Folders and URLs are English (`/games/orbit/` …). The old German folders only hold a redirect, so old links still work.
+  Storage keys keep the old German slugs (`umlauf:…`, `echolot:…`) so nobody loses their saves.
 
 ## 6. Difficulty
 

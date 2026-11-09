@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Sonar · games.labtoso.de</title>
+<meta name="description" content="Steer a small submarine through dark water by sound.">
+<meta name="theme-color" content="#131116">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../shared/style.css">
+</head>
+<body class="game-page" data-game="echolot">
+<header class="bar">
+  <a class="back" href="../../">← Arcade</a>
+  <h1>Sonar</h1>
+  <button class="mute" type="button" data-mute>Sound on</button>
+  <div class="scores"><span>Score <b data-score>0</b></span><span>Best <b data-best>0</b></span></div>
+</header>
+<main class="stage">
+  <canvas id="c" aria-label="Sonar"></canvas>
+  <div class="overlay" hidden><div class="card"><h2></h2><p></p><button class="btn" type="button"></button></div></div>
+</main>
+<footer class="hint"><span>Phone: stick and Ping button. Mouse: hold to steer, click to ping.</span><span class="keys"><kbd>WASD</kbd>/<kbd>arrows</kbd> steer · <kbd>Space</kbd> ping</span></footer>
+<script src="../../shared/shell.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
