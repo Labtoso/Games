@@ -29,10 +29,24 @@
   let court = { x: 0, y: 0, w: 1, h: 1 }, L, R, balls = [], items = [], state = 'menu', t = 0, shake = 0, serveT = 0, server = 1, rally = 0, bestRally = 0, goalFlash = { side: 0, t: 0 }, itemT = 6, banner = null;
   const AI = { easy: { speed: 0.55, react: 0.28, err: 60 }, normal: { speed: 0.8, react: 0.16, err: 30 }, hard: { speed: 1.05, react: 0.07, err: 10 } };
 
+  // On a portrait phone the court is turned 90 degrees: the game still runs left to right in its own
+  // coordinates, the drawing is rotated so the paddles sit at the top and bottom of the screen.
+  let rot = false;
+  const vw = () => (rot ? st.h : st.w);
   function fitCourt() {
-    const pad = Math.min(24, st.w * 0.04);
-    court = { x: pad, y: pad + 10, w: st.w - pad * 2, h: st.h - pad * 2 - 10 };
-    if (L) { L.x = court.x + 22; R.x = court.x + court.w - 22; }
+    rot = st.h > st.w * 1.15;
+    const W = rot ? st.h : st.w, H = rot ? st.w : st.h;
+    const pad = Math.min(24, Math.min(W, H) * 0.04), top = rot ? 0 : 10;
+    const old = court;
+    court = { x: pad, y: pad + top, w: W - pad * 2, h: H - pad * 2 - top };
+    // keep everything at the same place on the court when the screen turns or resizes
+    const mx = (x) => court.x + ((x - old.x) / old.w) * court.w, my = (y) => court.y + ((y - old.y) / old.h) * court.h;
+    if (L) { L.x = court.x + 22; R.x = court.x + court.w - 22; L.y = my(L.y); R.y = my(R.y); L.h = R.h = Math.max(70, court.h * 0.2); L.aiY = my(L.aiY); R.aiY = my(R.aiY); }
+    for (const b of balls) { b.x = mx(b.x); b.y = my(b.y); b.px = b.x; b.py = b.y; b.trail = []; }
+    for (const it of items) { it.x = mx(it.x); it.y = my(it.y); }
+  }
+  function upright(text, x, y) {
+    ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(Math.PI / 2); ctx.fillText(text, 0, 0); ctx.restore();
   }
 
   function paddle(x) { return { x, y: court.y + court.h / 2, vy: 0, h: Math.max(70, court.h * 0.2), w: 12, score: 0, big: 0, aiT: 0, aiY: court.y + court.h / 2 }; }
@@ -98,11 +112,22 @@
     void step;
   }
 
+  // Swept test against the paddle face: a fast ball (or a long frame) can jump past a 12 px paddle in one step,
+  // so check where the ball's leading edge crossed the face, not only where it ended up.
   function hitPaddle(b, p, side) {
     const h = p.h * (p.big > 0 ? 1.5 : 1);
     const px = p.x + (side < 0 ? p.w / 2 : -p.w / 2);
-    if ((side < 0 && b.vx < 0 && b.x - b.r <= px && b.x > p.x - p.w) || (side > 0 && b.vx > 0 && b.x + b.r >= px && b.x < p.x + p.w)) {
-      if (Math.abs(b.y - p.y) <= h / 2 + b.r) {
+    if (side < 0 ? b.vx >= 0 : b.vx <= 0) return;
+    const edge = b.x + side * b.r, prevEdge = b.px + side * b.r;
+    let yAt = null;
+    if ((prevEdge - px) * side <= 0.5 && (edge - px) * side >= 0) {
+      const k = prevEdge === edge ? 1 : S.clamp((px - prevEdge) / (edge - prevEdge), 0, 1);
+      yAt = b.py + (b.y - b.py) * k;
+    } else if (Math.abs(b.x - p.x) <= p.w / 2 + b.r) yAt = b.y; // paddle moved onto the ball
+    if (yAt === null) return;
+    {
+      if (Math.abs(yAt - p.y) <= h / 2 + b.r) {
+        b.y = yAt;
         const off = S.clamp((b.y - p.y) / (h / 2), -1, 1);
         const sp = Math.min(Math.hypot(b.vx, b.vy) * 1.05, baseSpeed() * 2.3);
         const ang = off * 0.95;
@@ -153,8 +178,9 @@
       let tl = null, tr = null;
       const rect = cv.getBoundingClientRect();
       for (const e of touches.values()) {
-        const x = e.clientX - rect.left, y = e.clientY - rect.top;
-        if (x < st.w / 2 || mode === 'ai') tl = y; else tr = y;
+        const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+        const x = rot ? st.h - sy : sx, y = rot ? sx : sy; // screen to court coordinates
+        if (x < vw() / 2 || mode === 'ai') tl = y; else tr = y;
       }
       movePaddle(L, S.clamp(dl, -1, 1), dt, tl);
       if (mode === 'ai') aiMove(R, dt); else movePaddle(R, S.clamp(dr, -1, 1), dt, tr);
@@ -166,6 +192,7 @@
         const slowK = b.slow > 0 ? 0.55 : 1;
         b.slow = Math.max(0, b.slow - dt);
         b.vy += b.spin * 260 * dt; b.spin *= Math.exp(-1.2 * dt);
+        b.px = b.x; b.py = b.y;
         b.x += b.vx * dt * slowK; b.y += b.vy * dt * slowK;
         if (b.y - b.r < court.y) { b.y = court.y + b.r; b.vy = Math.abs(b.vy); snd.tone(220, 0.04, 'sine', 0.12); fx.burst(b.x, b.y, P.ink, 4, 60, 0.25, 2); }
         if (b.y + b.r > court.y + court.h) { b.y = court.y + court.h - b.r; b.vy = -Math.abs(b.vy); snd.tone(220, 0.04, 'sine', 0.12); fx.burst(b.x, b.y, P.ink, 4, 60, 0.25, 2); }
@@ -215,6 +242,8 @@
     const w = st.w, h = st.h;
     S.tex.paperBg(ctx, w, h, P);
     ctx.save();
+    if (rot) { ctx.translate(0, h); ctx.rotate(-Math.PI / 2); } // your paddle at the bottom, under the thumb
+    ctx.save();
     if (shake > 0) ctx.translate(S.rand(-1, 1) * shake * 10, S.rand(-1, 1) * shake * 10);
     const c = court;
     // Spielfeld
@@ -235,8 +264,8 @@
     if (L) {
       ctx.font = `400 ${Math.min(120, c.h * 0.28)}px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.globalAlpha = 0.16; ctx.fillStyle = P.ink;
-      ctx.fillText(String(L.score), c.x + c.w * 0.25, c.y + c.h / 2);
-      ctx.fillText(String(R.score), c.x + c.w * 0.75, c.y + c.h / 2);
+      upright(String(L.score), c.x + c.w * 0.25, c.y + c.h / 2);
+      upright(String(R.score), c.x + c.w * 0.75, c.y + c.h / 2);
       ctx.globalAlpha = 1; ctx.textBaseline = 'alphabetic';
     }
 
@@ -267,15 +296,17 @@
     }
     if (state === 'play' && serveT > 0 && L) {
       ctx.fillStyle = P.ink; ctx.font = '600 13px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.textAlign = 'center';
-      ctx.fillText(T.serve(server < 0 ? '←' : '→'), c.x + c.w / 2, c.y + c.h / 2 + Math.min(60, c.h * 0.14) + 24);
+      if (rot) upright(T.serve(server < 0 ? '↓' : '↑'), c.x + c.w / 2 - Math.min(60, c.h * 0.14) - 24, c.y + c.h / 2);
+      else ctx.fillText(T.serve(server < 0 ? '←' : '→'), c.x + c.w / 2, c.y + c.h / 2 + Math.min(60, c.h * 0.14) + 24);
     }
     for (const b of balls) S.dbg.circle(ctx, b.x, b.y, b.r);
     if (L) for (const p of [L, R]) { const ph = p.h * (p.big > 0 ? 1.5 : 1); S.dbg.rect(ctx, p.x - p.w / 2, p.y - ph / 2, p.w, ph, '#f0f'); }
     fx.draw(ctx); fl.draw(ctx);
     ctx.restore();
+    ctx.restore();
     S.tex.grain(ctx, w, h, P.ink, P.dark ? 0.5 : 1);
 
-    if (L) {
+    if (L && !rot) {
       ctx.font = '600 12px ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace'; ctx.fillStyle = P.soft; ctx.textAlign = 'left';
       ctx.fillText(mode === 'ai' ? T.you : T.leftKeys, c.x + 8, c.y - 6);
       ctx.textAlign = 'right'; ctx.fillText(mode === 'ai' ? T.cpu(diff.label) : T.rightKeys, c.x + c.w - 8, c.y - 6);
@@ -283,8 +314,8 @@
     }
     if (banner) {
       const k = banner.t < 0.4 ? E.outBack(banner.t / 0.4) : banner.t > 1.6 ? 1 - (banner.t - 1.6) / 0.4 : 1;
-      ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, court.y + court.h * 0.22);
-      ctx.font = '700 28px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif'; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
+      ctx.save(); ctx.globalAlpha = S.clamp(k, 0, 1); ctx.translate(w / 2, rot ? h * 0.3 : court.y + court.h * 0.22);
+      ctx.font = `700 ${Math.round(Math.min(28, w / 15))}px "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif`; ctx.textAlign = 'center'; ctx.fillStyle = P.ink; ctx.fillText(banner.text, 0, 0);
       ctx.restore();
     }
   }
