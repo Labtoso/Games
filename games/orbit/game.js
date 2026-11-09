@@ -45,7 +45,7 @@
     if (type === 'giant') r *= 1.45;
     if (type === 'ice') r *= 0.85;
     const R = (type === 'giant' ? r * 2.1 + 40 : r * 2.3 + 26) * D().cap;
-    const margin = R * 0.6 + 8;
+    const margin = Math.min(R * 0.9 + 6, w * 0.5 - 4);
     const prev = planets[planets.length - 1];
     let x = S.rand(margin, w - margin);
     if (prev) { let tries = 0; while (Math.abs(x - prev.x) < w * 0.18 && tries++ < 8) x = S.rand(margin, w - margin); }
@@ -62,7 +62,9 @@
       if (spawned > 4 && Math.random() < 0.09) powers.push({ x: S.rand(40, w - 40), y: my, kind: Math.random() < 0.5 ? 'shield' : 'magnet', got: false, ph: Math.random() * 6 });
       if (Math.random() < z.holes && spawned > 2) {
         const hx = p.x < w / 2 ? S.rand(w * 0.6, w - 40) : S.rand(40, w * 0.4);
-        holes.push({ x: hx, y: my - S.rand(20, 60), r: 9, pull: 150 });
+        const hy = my - S.rand(20, 60);
+        // keep holes clear of both orbits, so the pull cannot grab a ship right at launch or arrival
+        if (Math.hypot(hx - p.x, hy - p.y) > p.R + 70 && Math.hypot(hx - prev.x, hy - prev.y) > prev.R + 70) holes.push({ x: hx, y: hy, r: 9, pull: 150 });
       }
     }
     spawned++;
@@ -144,11 +146,25 @@
 
   function start() { reset(); state = 'play'; banner = { text: T.zone(1, ZONES[0].name), t: 0 }; }
 
+  // Lost only when the ship is well off screen and no ring it could still reach is close by
+  function lost(w, h) {
+    if (flyTime > 5) return true;
+    const sy = ship.y - camY;
+    if (flyTime < 3.2 && ship.x > -40 && ship.x < w + 40 && sy < h + 40 && sy > -120) return false;
+    if (ship.x < -160 || ship.x > w + 160 || sy > h + 160) return true;
+    for (const p of planets) {
+      if (p === ship.from || p.crumble > 0) continue;
+      const dx = p.x - ship.x, dy = p.y - ship.y, d = Math.hypot(dx, dy);
+      if (d < p.R + 120 && dx * ship.vx + dy * ship.vy > 0) return false;
+    }
+    return true;
+  }
+
   function update(dt) {
     t += dt;
     const w = W(), h = H();
     for (const p of planets) {
-      if (p.drift) { p.x += p.drift * dt; if (p.x < p.R * 0.6 || p.x > w - p.R * 0.6) { p.drift *= -1; p.x = S.clamp(p.x, p.R * 0.6, w - p.R * 0.6); } }
+      if (p.drift) { const m = Math.min(p.R * 0.9 + 6, w * 0.5 - 4); p.x += p.drift * dt; if (p.x < m || p.x > w - m) { p.drift *= -1; p.x = S.clamp(p.x, m, w - m); } }
       if (p.crumble > 0) p.crumble += dt;
     }
     // Kometen
@@ -186,13 +202,18 @@
           if (d < 140) { const f = (ho.pull * 60) / Math.max(d, 20); ship.vx += (dx / d) * f * dt; ship.vy += (dy / d) * f * dt; }
           if (d < ho.r + 4 && state === 'play') { die('hole'); break; }
         }
+        const ox = ship.x, oy = ship.y;
         ship.x += ship.vx * dt; ship.y += ship.vy * dt;
         if (ship.mode === 'fly') for (const p of planets) {
           if (p === ship.from || p.crumble > 0 || !pulsarOpen(p)) continue;
-          const d = Math.hypot(ship.x - p.x, ship.y - p.y);
-          if (d < p.R) { capture(p, d); break; }
+          // swept check, so a fast ship cannot skip the edge of a ring between two frames
+          const sx = ship.x - ox, sy = ship.y - oy, l2 = sx * sx + sy * sy;
+          const k = l2 > 0 ? S.clamp(((p.x - ox) * sx + (p.y - oy) * sy) / l2, 0, 1) : 1;
+          const cx = ox + sx * k, cy = oy + sy * k;
+          const d = Math.hypot(cx - p.x, cy - p.y);
+          if (d < p.R) { ship.x = cx; ship.y = cy; capture(p, d); break; }
         }
-        if (state === 'play' && ship.mode === 'fly' && (ship.x < -30 || ship.x > w + 30 || ship.y - camY > h + 30 || ship.y - camY < -60 || flyTime > 3.2)) die('drift');
+        if (state === 'play' && ship.mode === 'fly' && lost(w, h)) die('drift');
       }
       if (state === 'play') {
         for (const c of comets) if (Math.hypot(c.x - ship.x, c.y - ship.y) < 14) { c.x = -999; die('comet'); break; }
@@ -222,7 +243,7 @@
       if (ship.trail.length > 70) ship.trail.splice(0, 2);
     }
 
-    if (ship && state !== 'over') camY = S.lerp(camY, ship.y - h * 0.62, Math.min(1, dt * 2.6));
+    if (ship && state !== 'over') camY = S.lerp(camY, ship.y - h * 0.62, Math.min(1, dt * (ship.mode === 'fly' ? 4 : 2.6)));
     while (nextY > camY - h * 1.2) addPlanet();
     planets = planets.filter((p) => p.y - camY < h + 200 || p === (ship && ship.p) || p === (ship && ship.from));
     sparks = sparks.filter((s) => s.y - camY < h + 100);
@@ -271,7 +292,7 @@
       if (!p.visited && p.crumble === 0) {
         ctx.save();
         ctx.setLineDash(p.type === 'pulsar' ? [8, 5] : [3, 7]); ctx.lineDashOffset = -t * 12;
-        ctx.strokeStyle = p.type === 'pulsar' ? P.pink : P.soft; ctx.globalAlpha = open ? 0.6 : 0.12; ctx.lineWidth = p.type === 'pulsar' ? 2 : 1.5;
+        ctx.strokeStyle = p.type === 'pulsar' ? P.pink : P.soft; ctx.globalAlpha = open ? 0.6 : 0.22; ctx.lineWidth = p.type === 'pulsar' ? 2 : 1.5;
         ctx.beginPath(); ctx.arc(p.x, p.y, p.R, 0, Math.PI * 2); ctx.stroke();
         ctx.restore();
       }
