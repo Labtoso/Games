@@ -47,7 +47,7 @@
     { name: 'The Trench', fill: 0.49, metal: 1, fish: 1, anglers: 2, jellies: 3, secrets: 2 },
     { name: 'The Caves', fill: 0.47, metal: 1, fish: 2, anglers: 3, jellies: 2, secrets: 3 },
   ];
-  const zoneOf = (lv) => ZONES[Math.min(ZONES.length - 1, Math.floor((lv - 1) / 2))];
+  const zoneOf = (lv) => ZONES[Math.min(ZONES.length - 1, lv - 1)];
 
   let cols, rows, grid, rock, lit, start, exit, sub, mines, items, creatures, pings, beaconT, level, score, hull, battery, pearls, state = 'menu', t = 0, shake = 0, camX = 0, camY = 0, levelTime = 0, echoDir = null, banner = null, lowWarn = 0;
   let up;
@@ -58,6 +58,15 @@
   const ringMax = () => 520 + up.range * 110;
   const wakeRange = () => 600 * (1 - up.quiet * 0.25);
   const pingCost = () => D().cost * (1 - up.cap * 0.18);
+  /* Hunters: how long they keep chasing, how far they can still hear the sub, how fast they get */
+  const chaseTime = () => Math.min(14, 7 + level * 0.6);
+  const hearR = () => Math.min(420, 220 + level * 22) * (1 - up.quiet * 0.15);
+  const mineSpeed = () => Math.min(165, 52 + level * 10) * D().msp;
+  const anglerSpeed = () => Math.min(180, 66 + level * 10) * D().msp;
+  /* while hunting: follow the sub when it is close enough to hear, otherwise head for where it was last heard */
+  function track(e) {
+    if (Math.hypot(sub.x - e.x, sub.y - e.y) < hearR()) { e.tx = sub.x; e.ty = sub.y; e.hunt = Math.max(e.hunt, 2.5); }
+  }
 
   function idx(x, y) { return y * cols + x; }
   const out = (x, y) => x < 0 || y < 0 || x >= cols || y >= rows;
@@ -130,13 +139,13 @@
       }
 
       mines = [];
-      const want = Math.round((3 + level * 2) * D().mines);
+      const want = Math.round((4 + level * 3) * D().mines);
       for (const k of openCells) {
         if (mines.length >= want) break;
         if (dist[k] < 12 || dist[k] > dist[far] - 3) continue;
         const mx = cx(k), my = cy(k);
         if (!far2(mines, mx, my, CS * 6)) continue;
-        const patrol = level >= 3 && Math.random() < 0.3;
+        const patrol = level >= 2 && Math.random() < Math.min(0.6, 0.15 + level * 0.07);
         const ang = Math.random() * Math.PI * 2;
         mines.push({ x: mx, y: my, tx: mx, ty: my, lit: -99, hunt: 0, wake: Infinity, ph: Math.random() * 6, patrol, vx: patrol ? Math.cos(ang) * 40 : 0, vy: patrol ? Math.sin(ang) * 40 : 0 });
       }
@@ -193,8 +202,8 @@
         }
       };
       spawnC('fish', z.fish + Math.floor(level / 3));
-      spawnC('angler', Math.round((z.anglers + Math.floor(level / 5)) * D().mines));
-      spawnC('jelly', z.jellies + Math.floor(level / 4));
+      spawnC('angler', Math.round((z.anglers + Math.floor(level / 3)) * D().mines));
+      spawnC('jelly', z.jellies + Math.floor(level / 3));
       return true;
     }
     return false;
@@ -390,13 +399,15 @@
         const o = { x: c.x + c.vx * dt, y: c.y + c.vy * dt, vx: c.vx, vy: c.vy };
         collideCircle(o, 6, 0.6, isSolid); c.x = o.x; c.y = o.y; c.vx = o.vx; c.vy = o.vy;
       } else if (c.kind === 'angler') {
-        if (t >= c.wake) { c.hunt = 4; c.wake = Infinity; c.sq = 1; }
+        if (t >= c.wake) { c.hunt = chaseTime(); c.wake = Infinity; c.sq = 1; }
+        // an idle angler also notices a sub that swims right past it
+        else if (c.hunt <= 0 && state === 'play' && Math.hypot(sub.x - c.x, sub.y - c.y) < 70 + level * 6) { c.hunt = chaseTime(); c.sq = 1; }
         if (c.hunt > 0) {
-          c.hunt -= dt;
+          c.hunt = Math.max(0, c.hunt - dt);
+          if (state === 'play') track(c);
           const dx = c.tx - c.x, dy = c.ty - c.y, d = Math.hypot(dx, dy) || 1;
-          const sp = (60 + level * 6) * D().msp;
-          c.vx = S.lerp(c.vx, (dx / d) * sp, Math.min(1, dt * 2)); c.vy = S.lerp(c.vy, (dy / d) * sp, Math.min(1, dt * 2));
-          if (d < 8) c.hunt = 0;
+          const sp = d < 8 ? 0 : anglerSpeed();
+          c.vx = S.lerp(c.vx, (dx / d) * sp, Math.min(1, dt * 2.5)); c.vy = S.lerp(c.vy, (dy / d) * sp, Math.min(1, dt * 2.5));
         } else { c.vx *= Math.exp(-dt); c.vy *= Math.exp(-dt); }
         const o = { x: c.x + c.vx * dt, y: c.y + c.vy * dt, vx: c.vx, vy: c.vy };
         collideCircle(o, 9, 0.2, isSolid); c.x = o.x; c.y = o.y; c.vx = o.vx; c.vy = o.vy;
@@ -445,12 +456,13 @@
 
       for (let i = mines.length - 1; i >= 0; i--) {
         const m = mines[i];
-        if (t >= m.wake) { m.hunt = 1; m.wake = Infinity; }
-        if (m.hunt) {
+        if (t >= m.wake) { m.hunt = chaseTime() * 0.8; m.wake = Infinity; }
+        if (m.hunt > 0) {
+          m.hunt = Math.max(0, m.hunt - dt);
+          track(m);
           const dx = m.tx - m.x, dy = m.ty - m.y, d = Math.hypot(dx, dy);
-          const sp = (48 + level * 7) * D().msp;
+          const sp = mineSpeed();
           if (d > 4) { const o = { x: m.x + (dx / d) * sp * dt, y: m.y + (dy / d) * sp * dt, vx: 0, vy: 0 }; collideCircle(o, 8, 0, isSolid); m.x = o.x; m.y = o.y; }
-          else m.hunt = 0;
         } else if (m.patrol) {
           const o = { x: m.x + m.vx * dt, y: m.y + m.vy * dt, vx: m.vx, vy: m.vy };
           collideCircle(o, 8, 1, isSolid); m.x = o.x; m.y = o.y; m.vx = o.vx; m.vy = o.vy;
@@ -632,7 +644,15 @@
     ctx.beginPath(); ctx.arc(ex, ey, 5, 0, Math.PI * 2); ctx.fill();
     ctx.globalAlpha = 1;
 
-    for (const c of creatures) { const a = visAlpha(c.lit, c.x, c.y, 80); if (a > 0.02) drawCreature(c, a); }
+    for (const c of creatures) {
+      const a = visAlpha(c.lit, c.x, c.y, 80);
+      if (a > 0.02) drawCreature(c, a);
+      else if (c.kind === 'angler' && c.hunt > 0) { // a hunting angler gives itself away by its lure
+        const dir = c.vx >= 0 ? 1 : -1;
+        ctx.globalAlpha = 0.5 + Math.sin(t * 7 + c.ph) * 0.35; ctx.fillStyle = C.angler;
+        ctx.beginPath(); ctx.arc(c.x + 16 * dir, c.y - 10, 2.4, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
+      }
+    }
 
     for (const m of mines) {
       const a = visAlpha(m.lit, m.x, m.y, 80);
