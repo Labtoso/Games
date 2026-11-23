@@ -59,13 +59,13 @@
   const wakeRange = () => 600 * (1 - up.quiet * 0.25);
   const pingCost = () => D().cost * (1 - up.cap * 0.18);
   /* Hunters: how long they keep chasing, how far they can still hear the sub, how fast they get */
-  const chaseTime = () => Math.min(14, 7 + level * 0.6);
+  const chaseTime = () => Math.min(10, 5 + level * 0.4);
   const hearR = () => Math.min(420, 220 + level * 22) * (1 - up.quiet * 0.15);
   const mineSpeed = () => Math.min(165, 52 + level * 10) * D().msp;
   const anglerSpeed = () => Math.min(180, 66 + level * 10) * D().msp;
-  /* while hunting: follow the sub when it is close enough to hear, otherwise head for where it was last heard */
+  /* only a ping starts a hunt; for its fixed time the hunter follows the sub while it can hear it, else heads for the last spot */
   function track(e) {
-    if (Math.hypot(sub.x - e.x, sub.y - e.y) < hearR()) { e.tx = sub.x; e.ty = sub.y; e.hunt = Math.max(e.hunt, 2.5); }
+    if (Math.hypot(sub.x - e.x, sub.y - e.y) < hearR()) { e.tx = sub.x; e.ty = sub.y; }
   }
 
   function idx(x, y) { return y * cols + x; }
@@ -400,8 +400,6 @@
         collideCircle(o, 6, 0.6, isSolid); c.x = o.x; c.y = o.y; c.vx = o.vx; c.vy = o.vy;
       } else if (c.kind === 'angler') {
         if (t >= c.wake) { c.hunt = chaseTime(); c.wake = Infinity; c.sq = 1; }
-        // an idle angler also notices a sub that swims right past it
-        else if (c.hunt <= 0 && state === 'play' && Math.hypot(sub.x - c.x, sub.y - c.y) < 70 + level * 6) { c.hunt = chaseTime(); c.sq = 1; }
         if (c.hunt > 0) {
           c.hunt = Math.max(0, c.hunt - dt);
           if (state === 'play') track(c);
