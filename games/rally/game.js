@@ -27,7 +27,15 @@
   const WIN = 7;
   let mode = S.store.get('schlagabtausch:mode', 'ai'), level = diff.value, extras = S.store.get('schlagabtausch:extras', true);
   let court = { x: 0, y: 0, w: 1, h: 1 }, L, R, balls = [], items = [], state = 'menu', t = 0, shake = 0, serveT = 0, server = 1, rally = 0, bestRally = 0, goalFlash = { side: 0, t: 0 }, itemT = 6, banner = null;
-  const AI = { easy: { speed: 0.55, react: 0.28, err: 60 }, normal: { speed: 0.8, react: 0.16, err: 30 }, hard: { speed: 1.05, react: 0.07, err: 10 } };
+  /* Computer skill. speed: paddle speed (1 = a player's). react: seconds before it notices a ball and between
+     re-reads. sight: share of the court (from its own end) in which it starts tracking a ball. bounces: wall bounces
+     it can foresee. err: aiming error per ball, in paddle half-heights, grows with ball speed. miss: chance to
+     misjudge a ball completely. */
+  const AI = {
+    easy: { speed: 0.5, react: 0.35, sight: 0.55, bounces: 0, err: 1.1, miss: 0.12 },
+    normal: { speed: 0.7, react: 0.22, sight: 0.7, bounces: 1, err: 0.8, miss: 0.07 },
+    hard: { speed: 0.95, react: 0.12, sight: 0.9, bounces: 3, err: 0.45, miss: 0.025 },
+  };
 
   // On a portrait phone the court is turned 90 degrees: the game still runs left to right in its own
   // coordinates, the drawing is rotated so the paddles sit at the top and bottom of the screen.
@@ -49,7 +57,7 @@
     ctx.save(); ctx.translate(x, y); if (rot) ctx.rotate(Math.PI / 2); ctx.fillText(text, 0, 0); ctx.restore();
   }
 
-  function paddle(x) { return { x, y: court.y + court.h / 2, vy: 0, h: Math.max(70, court.h * 0.2), w: 12, score: 0, big: 0, aiT: 0, aiY: court.y + court.h / 2 }; }
+  function paddle(x) { return { x, y: court.y + court.h / 2, vy: 0, h: Math.max(70, court.h * 0.2), w: 12, score: 0, big: 0, aiT: 0, aiY: court.y + court.h / 2, aiBall: null, aiBias: 0 }; }
 
   function newBall(dir) {
     const a = S.rand(-0.45, 0.45);
@@ -86,30 +94,34 @@
     p.vy = (p.y - prev) / Math.max(dt, 0.001);
   }
 
+  // Where the ball will cross x, following at most n wall bounces; beyond that the guess just sticks to the wall.
+  function predictY(b, x, n) {
+    const top = court.y + b.r, bot = court.y + court.h - b.r;
+    let y = b.y + b.vy * ((x - b.x) / b.vx);
+    for (let i = 0; i < n && (y < top || y > bot); i++) y = y < top ? 2 * top - y : 2 * bot - y;
+    return S.clamp(y, top, bot);
+  }
+
   function aiMove(p, dt) {
     const cfg = AI[level];
+    const half = (p.h * (p.big > 0 ? 1.5 : 1)) / 2;
+    const near = court.x + court.w * (1 - cfg.sight);
+    const inc = balls.filter((b) => b.vx > 0 && b.x > near).sort((a, b) => b.x - a.x)[0] || null;
+    if (inc !== p.aiBall) {
+      // a new ball to deal with: take a moment to notice it, and decide once how far off the guess will be
+      p.aiBall = inc; p.aiT = cfg.react * S.rand(0.8, 1.4);
+      if (inc) {
+        const fast = 1 + (S.clamp(Math.hypot(inc.vx, inc.vy) / baseSpeed(), 1, 2.3) - 1) * 0.6;
+        p.aiBias = Math.random() < cfg.miss ? (Math.random() < 0.5 ? -1 : 1) * S.rand(1.25, 1.7) : S.rand(-1, 1) * cfg.err * fast;
+      }
+    }
     p.aiT -= dt;
     if (p.aiT <= 0) {
       p.aiT = cfg.react;
-      // Ball suchen, der auf mich zukommt
-      let target = court.y + court.h / 2;
-      const incoming = balls.filter((b) => b.vx > 0).sort((a, b) => b.x - a.x)[0];
-      if (incoming) {
-        // Flugbahn mit Bandenabprall vorhersagen
-        let x = incoming.x, y = incoming.y, vy = incoming.vy;
-        const tt = (p.x - x) / incoming.vx;
-        y += vy * tt;
-        const top = court.y + incoming.r, bot = court.y + court.h - incoming.r, span = bot - top;
-        let m = ((y - top) % (2 * span) + 2 * span) % (2 * span);
-        y = m > span ? top + 2 * span - m : top + m;
-        target = y + S.rand(-cfg.err, cfg.err);
-      }
-      p.aiY = target;
+      p.aiY = inc ? predictY(inc, p.x, cfg.bounces) + p.aiBias * (half + inc.r) : court.y + court.h / 2;
     }
-    const diff = p.aiY - p.y;
-    const step = court.h * 1.5 * cfg.speed * dt;
-    movePaddle(p, Math.abs(diff) < 4 ? 0 : Math.sign(diff), dt, null, Math.min(cfg.speed, Math.abs(diff) / (court.h * 1.5 * dt || 1)));
-    void step;
+    const d = p.aiY - p.y;
+    movePaddle(p, Math.abs(d) < 4 ? 0 : Math.sign(d), dt, null, Math.min(cfg.speed, Math.abs(d) / (court.h * 1.5 * dt || 1)));
   }
 
   // Swept test against the paddle face: a fast ball (or a long frame) can jump past a 12 px paddle in one step,
