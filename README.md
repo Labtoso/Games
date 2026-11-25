@@ -1,6 +1,6 @@
 # Arcade
 
-Nine small browser games, live at **https://games.labtoso.de**.
+Ten small browser games, live at **https://games.labtoso.de**.
 
 | Game | What it is | Controls |
 | --- | --- | --- |
@@ -13,8 +13,9 @@ Nine small browser games, live at **https://games.labtoso.de**.
 | **Rally** (`games/rally`) | Paddle duel against the computer or a friend. | W/S and ↑/↓, on phones both screen halves |
 | **Mosaic** (`games/mosaic`) | Logic puzzle of numbered tiles that turns into a picture. | Tap and drag, H hint, M mode |
 | **What does it sell?** (`games/guess`) | Guess what a real website sells from a blurred screenshot. | Tap, or 1–4 and Enter |
+| **Casino** (`games/casino`) | Slots, Crash, Plinko and Blackjack with play credits, daily bonus, levels and achievements. No real money. | Space, H/S/D in Blackjack |
 
-Every game has Easy, Normal and Hard (best scores are kept per difficulty). `/debug` opens a
+Every game except the Casino has Easy, Normal and Hard (best scores are kept per difficulty). `/debug` opens a
 public test mode with cheats, start level, difficulty, currency, FPS and hitboxes; the same
 options work as URL parameters on every game, for example
 `/games/starwatch/?debug=1&level=5&god=1&money=800`.

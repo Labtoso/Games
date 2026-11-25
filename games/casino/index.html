@@ -1,258 +1,200 @@
-<!DOCTYPE html>
-<html lang="de">
+<!doctype html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CASINO — games.labtoso.de</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casino · games.labtoso.de</title>
+<meta name="description" content="Slots, Crash, Plinko and Blackjack with play credits. No real money, nothing to buy.">
+<meta name="theme-color" content="#131116">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../../shared/style.css">
+<link rel="stylesheet" href="style.css">
 </head>
-<body>
+<body class="casino-page">
+<canvas id="fx" aria-hidden="true"></canvas>
 
-  <canvas id="fx-canvas"></canvas>
+<header class="bar">
+  <a class="back" href="../../">← Arcade</a>
+  <h1>Casino</h1>
+  <button class="mute" type="button" data-mute>Sound on</button>
+</header>
 
-  <!-- Top Header -->
-  <header class="topbar">
-    <div class="topbar-left">
-      <a href="../" class="brand-title">CASINO</a>
-      <nav class="game-nav">
-        <button onclick="switchGame('slots')" id="nav-slots" class="nav-btn active">SLOTS</button>
-        <button onclick="switchGame('crash')" id="nav-crash" class="nav-btn">CRASH</button>
-        <button onclick="switchGame('plinko')" id="nav-plinko" class="nav-btn">PLINKO</button>
-        <button onclick="switchGame('blackjack')" id="nav-blackjack" class="nav-btn">BLACKJACK</button>
-      </nav>
-    </div>
-
-    <div class="topbar-center">
-      <div class="wallet-box">
-        <div class="wallet-balance">
-          <span class="currency">CR</span>
-          <span id="balance-display" class="tabular-nums">1,000.00</span>
-        </div>
-        <button id="faucet-btn" onclick="claimReload()" class="faucet-btn hidden">+1,000 RELOAD</button>
-      </div>
-
-      <button onclick="claimRakeback()" id="rakeback-btn" class="rakeback-btn" title="Sofort-Cashback einsammeln">
-        <span class="muted">RAKEBACK</span>
-        <span id="rakeback-display" class="accent-green tabular-nums">0.00</span>
-      </button>
-    </div>
-
-    <div class="topbar-right">
-      <div class="stats-pill">
-        <span class="muted">STREAK</span>
-        <span id="streak-display" class="accent-gold tabular-nums">0x</span>
-        <span class="divider">|</span>
-        <span class="muted">LVL</span>
-        <span id="level-display" class="tabular-nums">1</span>
-      </div>
-
-      <button onclick="toggleTurbo()" id="turbo-btn" class="control-pill" title="Animationszeit halbieren & Space-Spam aktivieren">TURBO: OFF</button>
-      <button onclick="toggleMute()" id="mute-btn" class="control-pill active-pill">SFX: ON</button>
-    </div>
-  </header>
-
-  <!-- Mobile Nav -->
-  <div class="mobile-nav">
-    <button onclick="switchGame('slots')" id="mnav-slots" class="mnav-btn active">SLOTS</button>
-    <button onclick="switchGame('crash')" id="mnav-crash" class="mnav-btn">CRASH</button>
-    <button onclick="switchGame('plinko')" id="mnav-plinko" class="mnav-btn">PLINKO</button>
-    <button onclick="switchGame('blackjack')" id="mnav-blackjack" class="mnav-btn">BLACKJACK</button>
+<section class="hud" aria-label="Your account">
+  <div class="wallet">
+    <span class="lbl">Credits</span>
+    <b id="balance" class="num">1,000</b>
+    <button id="refill" class="chip-btn" type="button" hidden>Refill 1,000</button>
   </div>
+  <div class="level" title="Every bet earns XP. A level-up pays credits.">
+    <span class="lbl">Level <b id="level" class="num">1</b></span>
+    <div class="xpbar"><i id="xpfill"></i></div>
+    <span id="xptext" class="tiny num">0 / 120 XP</span>
+  </div>
+  <div class="streak" id="streakbox">
+    <span class="lbl">Win streak</span>
+    <b id="streak" class="num">0</b>
+    <span id="streakboost" class="tiny">XP ×1.0</span>
+  </div>
+  <button id="cashback" class="cashback" type="button" title="A share of every bet comes back. Grows with your level.">
+    <span class="lbl">Cashback <span id="cbrate">1.1%</span></span>
+    <b id="cbamount" class="num">0</b>
+  </button>
+  <button id="turbo" class="toggle" type="button" aria-pressed="false">Turbo</button>
+</section>
 
-  <!-- Main Workspace -->
-  <main class="workspace">
+<nav class="tabs" aria-label="Games">
+  <button type="button" data-tab="slots" aria-selected="true">Slots</button>
+  <button type="button" data-tab="crash">Crash</button>
+  <button type="button" data-tab="plinko">Plinko</button>
+  <button type="button" data-tab="blackjack">Blackjack</button>
+</nav>
 
-    <!-- Left Controls -->
-    <aside class="sidebar-left">
-      <div class="controls-top">
-        <div class="control-group">
-          <div class="label-row">
-            <span>EINSATZ</span>
-            <span class="link-hint" onclick="setBetMax()">MAX</span>
-          </div>
-          <div class="bet-input-wrap">
-            <input type="number" id="bet-input" value="10" min="1" step="1" class="tabular-nums" />
-            <div class="bet-modifiers">
-              <button onclick="adjustBet(0.5)">½</button>
-              <button onclick="adjustBet(2)">2×</button>
-            </div>
-          </div>
-          <div class="quick-chips">
-            <button onclick="setBet(10)">10</button>
-            <button onclick="setBet(50)">50</button>
-            <button onclick="setBet(250)">250</button>
-            <button onclick="setBet(1000)">1K</button>
-          </div>
-        </div>
+<main class="floor">
+  <aside class="panel controls">
+    <div class="field">
+      <div class="row"><label for="bet">Bet</label><button class="link" type="button" data-bet="max">Max</button></div>
+      <div class="betbox">
+        <input id="bet" type="number" inputmode="decimal" min="1" step="1" value="10" class="num">
+        <button type="button" data-bet="half">½</button>
+        <button type="button" data-bet="double">2×</button>
+      </div>
+      <div class="quick">
+        <button type="button" data-bet="10">10</button>
+        <button type="button" data-bet="50">50</button>
+        <button type="button" data-bet="250">250</button>
+        <button type="button" data-bet="1000">1K</button>
+      </div>
+    </div>
 
-        <!-- Slots Controls -->
-        <div id="controls-slots" class="game-controls">
-          <div class="toggle-row">
-            <span>AUTO-SPIN</span>
-            <button onclick="toggleAutoSpin()" id="autospin-btn" class="mini-toggle">OFF</button>
-          </div>
-          <button onclick="spinSlots()" id="slots-play-btn" class="primary-btn">SPIN [SPACE]</button>
-          <div class="paytable">
-            <div><span>777 × 5</span><span class="white">100.00×</span></div>
-            <div><span>◆ × 5</span><span class="white">40.00×</span></div>
-            <div><span>♛ × 5</span><span class="white">20.00×</span></div>
-            <div><span>BAR × 5</span><span class="white">10.00×</span></div>
-            <div><span>3+ GLEICHE</span><span>1.5× – 15×</span></div>
-          </div>
-        </div>
+    <div class="ctl" data-ctl="slots">
+      <button id="spin" class="go" type="button">Spin <kbd>Space</kbd></button>
+      <label class="check"><input id="auto" type="checkbox"> Auto spin <span class="tiny">(stops on a big win)</span></label>
+      <table class="pay">
+        <tr><td><span class="sym s0">7</span> × 5 / 4 / 3</td><td class="num">250 · 50 · 12</td></tr>
+        <tr><td><span class="sym s1">◆</span> × 5 / 4 / 3</td><td class="num">100 · 25 · 6</td></tr>
+        <tr><td><span class="sym s2">♛</span> × 5 / 4 / 3</td><td class="num">50 · 12 · 4</td></tr>
+        <tr><td><span class="sym s3">BAR</span> × 5 / 4 / 3</td><td class="num">20 · 6 · 2.5</td></tr>
+        <tr><td><span class="sym s4">●</span> × 5 / 4 / 3</td><td class="num">10 · 4 · 2</td></tr>
+        <tr><td><span class="sym s5">▲</span> × 5 / 4 / 3</td><td class="num">7 · 3 · 1.5</td></tr>
+      </table>
+      <p class="tiny">5 lines, left to right. Wins are times your bet and add up.</p>
+    </div>
 
-        <!-- Crash Controls -->
-        <div id="controls-crash" class="game-controls hidden">
-          <div class="control-group">
-            <label class="field-label">AUTO-CASHOUT (MULTIPLIKATOR)</label>
-            <input type="number" id="crash-autocashout" value="2.00" min="1.05" step="0.1" class="full-input tabular-nums" />
-          </div>
-          <button onclick="handleCrashAction()" id="crash-play-btn" class="primary-btn">BET [SPACE]</button>
-        </div>
+    <div class="ctl" data-ctl="crash" hidden>
+      <div class="field">
+        <div class="row"><label for="autoco">Auto cash out at</label><span class="tiny">0 = off</span></div>
+        <input id="autoco" type="number" inputmode="decimal" min="0" step="0.1" value="2" class="wide num">
+      </div>
+      <button id="crashgo" class="go" type="button">Bet <kbd>Space</kbd></button>
+      <p class="tiny">The line climbs until it crashes. Cash out before that and you win your bet times the number.</p>
+    </div>
 
-        <!-- Plinko Controls -->
-        <div id="controls-plinko" class="game-controls hidden">
-          <div class="control-group">
-            <label class="field-label">RISIKO</label>
-            <div class="segmented-control">
-              <button onclick="setPlinkoRisk('low')" id="risk-low" class="risk-btn">LOW</button>
-              <button onclick="setPlinkoRisk('med')" id="risk-med" class="risk-btn">MED</button>
-              <button onclick="setPlinkoRisk('high')" id="risk-high" class="risk-btn active">HIGH</button>
-            </div>
-          </div>
-          <button onclick="dropPlinkoBall()" id="plinko-play-btn" class="primary-btn">DROP BALL [SPACE]</button>
-          <p class="hint-text">Mehrere Bälle gleichzeitig droppen für Kaskaden.</p>
-        </div>
-
-        <!-- Blackjack Controls -->
-        <div id="controls-blackjack" class="game-controls hidden">
-          <button onclick="startBlackjack()" id="bj-deal-btn" class="primary-btn">DEAL [SPACE]</button>
-          <div id="bj-actions" class="bj-action-grid hidden">
-            <button onclick="bjHit()" class="sec-btn">HIT</button>
-            <button onclick="bjStand()" class="sec-btn">STAND</button>
-            <button onclick="bjDouble()" id="bj-double-btn" class="double-btn">2× DOUBLE</button>
-          </div>
+    <div class="ctl" data-ctl="plinko" hidden>
+      <div class="field">
+        <div class="row"><span class="lbl2">Risk</span></div>
+        <div class="seg" role="group" aria-label="Risk">
+          <button type="button" data-risk="low">Low</button>
+          <button type="button" data-risk="med">Medium</button>
+          <button type="button" data-risk="high" aria-pressed="true">High</button>
         </div>
       </div>
+      <button id="drop" class="go" type="button">Drop <kbd>Space</kbd></button>
+      <p class="tiny">Drop as many balls as you like at once.</p>
+    </div>
 
-      <!-- Session Profit Chart -->
-      <div class="session-box">
-        <div class="label-row">
-          <span>SESSION PROFIT</span>
-          <span id="session-profit" class="tabular-nums">0.00</span>
-        </div>
-        <div class="chart-wrap">
-          <canvas id="profit-chart" width="260" height="58"></canvas>
-        </div>
-        <div class="label-row small">
-          <span>PEAK: <span id="session-peak" class="white tabular-nums">1,000.00</span></span>
-          <button onclick="resetSessionStats()" class="reset-link">RESET</button>
+    <div class="ctl" data-ctl="blackjack" hidden>
+      <button id="deal" class="go" type="button">Deal <kbd>Space</kbd></button>
+      <div id="bjact" class="bjact" hidden>
+        <button type="button" data-bj="hit">Hit <kbd>H</kbd></button>
+        <button type="button" data-bj="stand">Stand <kbd>S</kbd></button>
+        <button type="button" data-bj="double" id="bjdouble">Double <kbd>D</kbd></button>
+      </div>
+      <p class="tiny">Dealer stands on 17. Blackjack pays 3 to 2.</p>
+    </div>
+
+    <div class="session">
+      <div class="row"><span class="lbl2">This session</span><b id="sprofit" class="num">±0</b></div>
+      <div class="chart"><canvas id="chart"></canvas></div>
+      <div class="row tiny"><span>Peak <b id="speak" class="num">1,000</b></span><button id="sreset" class="link" type="button">Reset</button></div>
+    </div>
+  </aside>
+
+  <section class="panel stagebox" id="stage">
+    <div class="view" data-view="slots">
+      <div class="vhead"><span>Five reels · five lines</span><span id="slotmsg" class="msg">Ready</span></div>
+      <div class="reelwrap">
+        <div id="reels" class="reels"></div>
+        <svg id="lines" class="lines" aria-hidden="true"></svg>
+      </div>
+      <div class="vfoot"><span>Last win</span><b id="lastwin" class="num">–</b></div>
+    </div>
+
+    <div class="view" data-view="crash" hidden>
+      <div class="vhead"><span>Crash</span><div id="crashhist" class="hist"></div></div>
+      <div class="arena">
+        <canvas id="crashc"></canvas>
+        <div class="crashread">
+          <b id="crashmult" class="num">1.00×</b>
+          <span id="crashsub">Place a bet</span>
         </div>
       </div>
-    </aside>
+      <div class="vfoot"><span>Your bet</span><b id="crashbet" class="num">–</b></div>
+    </div>
 
-    <!-- Center Stage -->
-    <section id="game-stage" class="stage">
+    <div class="view" data-view="plinko" hidden>
+      <div class="vhead"><span>Twelve rows</span><span id="plinkomsg" class="msg">–</span></div>
+      <div class="arena plinko"><canvas id="plinkoc"></canvas></div>
+      <div id="buckets" class="buckets"></div>
+    </div>
 
-      <!-- SLOTS -->
-      <div id="view-slots" class="game-view">
-        <div class="stage-header">
-          <span>5-REEL HIGH-VOLATILITY ENGINE</span>
-          <span id="slots-status" class="status-text">BEREIT</span>
-        </div>
-        <div class="slots-center">
-          <div id="slots-grid" class="slots-grid"></div>
-        </div>
-        <div class="stage-footer">
-          <span class="muted">LETZTER GEWINN</span>
-          <span id="slots-last-win" class="tabular-nums">0.00 CR</span>
-        </div>
+    <div class="view" data-view="blackjack" hidden>
+      <div class="vhead"><span>Blackjack</span><span id="bjmsg" class="msg">Ready</span></div>
+      <div class="felt">
+        <div class="hand"><div class="hlbl">Dealer <b id="dscore"></b></div><div id="dcards" class="cards"></div></div>
+        <div class="hand"><div class="hlbl">You <b id="pscore"></b></div><div id="pcards" class="cards"></div></div>
       </div>
+      <div class="vfoot"><span>Your bet</span><b id="bjbet" class="num">–</b></div>
+    </div>
 
-      <!-- CRASH -->
-      <div id="view-crash" class="game-view hidden">
-        <div class="stage-header">
-          <span>PROVABLY FAIR CURVE</span>
-          <div id="crash-history" class="crash-history"></div>
-        </div>
-        <div class="crash-arena">
-          <canvas id="crash-canvas"></canvas>
-          <div class="crash-overlay">
-            <div id="crash-multiplier" class="crash-mult tabular-nums">1.00×</div>
-            <div id="crash-subtext" class="crash-sub">EINSATZ PLATZIEREN</div>
-          </div>
-        </div>
-        <div class="stage-footer">
-          <span class="muted">STATUS</span>
-          <span id="crash-status">WARTEND</span>
-        </div>
+    <div id="bigwin" class="bigwin" hidden>
+      <div class="bwcard">
+        <span id="bwtitle" class="bwtitle">Big win</span>
+        <b id="bwamount" class="num">0</b>
+        <span id="bwmult" class="bwmult num">10×</span>
+        <span class="tiny">Tap to continue</span>
       </div>
+    </div>
+  </section>
 
-      <!-- PLINKO -->
-      <div id="view-plinko" class="game-view hidden">
-        <div class="stage-header">
-          <span>12-ROW MULTI-DROP BOARD</span>
-          <span id="plinko-last-hit" class="status-text">—</span>
-        </div>
-        <div class="plinko-arena">
-          <canvas id="plinko-canvas" width="520" height="390"></canvas>
-        </div>
-        <div id="plinko-buckets" class="plinko-buckets"></div>
-      </div>
+  <aside class="panel side">
+    <div class="daily" id="daily">
+      <div class="row"><span class="lbl2">Daily bonus</span><span id="dailyday" class="tiny">Day 1 of 7</span></div>
+      <ol id="dailytrack" class="track"></ol>
+      <button id="dailyclaim" class="go small" type="button">Claim</button>
+      <p id="dailynext" class="tiny" hidden></p>
+    </div>
 
-      <!-- BLACKJACK -->
-      <div id="view-blackjack" class="game-view hidden">
-        <div class="stage-header">
-          <span>DEALER STANDS ON 17 • BLACKJACK 3:2</span>
-          <span id="bj-status" class="status-text">BEREIT</span>
-        </div>
-        <div class="bj-table">
-          <div class="bj-hand-zone">
-            <div class="bj-label">DEALER <span id="bj-dealer-score"></span></div>
-            <div id="bj-dealer-cards" class="bj-cards"></div>
-          </div>
-          <div class="bj-hand-zone">
-            <div class="bj-label">HAND <span id="bj-player-score"></span></div>
-            <div id="bj-player-cards" class="bj-cards"></div>
-          </div>
-        </div>
-        <div class="stage-footer">
-          <span class="muted">AKTIVER EINSATZ</span>
-          <span id="bj-active-bet" class="white tabular-nums">0.00 CR</span>
-        </div>
-      </div>
+    <div class="ach">
+      <div class="row"><span class="lbl2">Achievements</span><span id="achcount" class="tiny num">0 / 0</span></div>
+      <ul id="achlist" class="achlist"></ul>
+    </div>
 
-    </section>
+    <div class="recent">
+      <div class="row"><span class="lbl2">Your bets</span></div>
+      <ul id="recent" class="recentlist"><li class="empty tiny">Nothing yet.</li></ul>
+    </div>
+  </aside>
+</main>
 
-    <!-- Right Live Feed & Seed -->
-    <aside class="sidebar-right">
-      <div class="feed-section">
-        <div class="stage-header">
-          <span class="white">LIVE FEED</span>
-          <span>ECHTZEIT</span>
-        </div>
-        <div id="live-feed" class="live-feed"></div>
-      </div>
+<div id="toasts" class="toasts" aria-live="polite"></div>
 
-      <div class="seed-box">
-        <div class="label-row">
-          <span>CLIENT SEED</span>
-          <button onclick="rotateSeed()" class="seed-btn">NEU</button>
-        </div>
-        <div id="seed-display" class="seed-value">8f9a2c41e0b7d39a</div>
-        <div class="label-row small">
-          <span>NONCE</span>
-          <span id="nonce-display" class="white tabular-nums">0</span>
-        </div>
-      </div>
-    </aside>
+<footer class="casino-foot">
+  <p>Play credits only. They have no cash value, cannot be bought and cannot be paid out.
+  Long-run return per bet: Slots 96.4%, Crash 96%, Plinko 99%, Blackjack about 99.5% with good play. The house edge never changes, streaks and levels do not change the odds.</p>
+  <span><a href="https://github.com/Labtoso/Games">Source</a> · <a href="https://labtoso.de/impressum" target="_blank" rel="noopener noreferrer">Impressum</a></span>
+</footer>
 
-  </main>
-
-  <script src="app.js"></script>
+<script src="../../shared/shell.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

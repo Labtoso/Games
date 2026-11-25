@@ -53,6 +53,7 @@ HUD and numbers.
 | Rally (`rally`) | Letterpress sports poster. Court in halftone ink, paddles as heavy bars, the score in big serif numerals. |
 | Mosaic (`mosaic`) | Glazed ceramic tiles. Grout lines, glaze highlight top left, and a colour mosaic that appears when the puzzle is solved. |
 | What does it sell? (`guess`) | Newsprint frame with registration marks and a pink offset. Grain sits on the frame, never on the screenshot. |
+| Casino (`casino`) | Card room on black paper. Reels, cards and the Crash chart are printed in the arcade inks with hard offset shadows; wins draw ink lines and throw coin confetti. Play credits only, the return per game is printed at the bottom of the page. |
 
 ## 3. Never (the AI-slop list)
 
@@ -133,6 +134,8 @@ with defaults; old ones are still read.
 | `guess:seen` | first 8 hex digits of every site id already shown |
 | `guess:reported` | ids the player reported, never shown again |
 | `guess:mode`, `guess:cycle` | answer mode, how often the whole pool was played through |
+| `casino:state` | Casino credits, level, XP, streaks, stats, achievements, daily bonus |
+| `casino:tab` | last Casino game opened |
 
 ## 9. Starwatch shop
 
