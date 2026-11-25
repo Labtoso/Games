@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="700" viewBox="0 0 1120 700">
+  <defs>
+    <pattern id="paper" width="12" height="12" patternUnits="userSpaceOnUse"><circle cx="2" cy="3" r="1" fill="#efe7d7" opacity=".1"/></pattern>
+    <pattern id="hatch" width="8" height="8" patternUnits="userSpaceOnUse"><path d="M0 8 8 0" stroke="#ff5e95" stroke-width="1" opacity=".3"/></pattern>
+  </defs>
+  <path fill="#131116" d="M0 0h1120v700H0z"/>
+  <path fill="url(#paper)" d="M0 0h1120v700H0z"/>
+  <g fill="none" stroke="#efe7d7" stroke-width="3">
+    <path d="M72 72h976v556H72z"/><path d="M110 214h900M110 538h900"/>
+    <path d="M120 262h570v222H120z"/>
+  </g>
+  <text x="112" y="170" font-family="Georgia,serif" font-size="76" fill="#ff5e95">NEXORA</text>
+  <text x="1008" y="164" text-anchor="end" font-family="monospace" font-size="23" fill="#a8a1ae">ARCADE / CASINO</text>
+  <g fill="#efe7d7"><path d="M138 280h164v186H138zM322 280h164v186H322zM506 280h164v186H506z"/></g>
+  <g fill="#131116" font-family="Georgia,serif" font-size="108" text-anchor="middle"><text x="220" y="411">7</text><text x="404" y="411">7</text><text x="588" y="411">7</text></g>
+  <path d="M122 383h566" stroke="#ff5e95" stroke-width="4"/>
+  <g fill="#6f96ff"><path d="M742 270h70v70h-70zM828 270h70v70h-70zM914 270h70v70h-70zM742 356h70v70h-70zM828 442h70v70h-70z"/></g>
+  <g fill="url(#hatch)" stroke="#ff5e95" stroke-width="2"><path d="M828 356h70v70h-70zM914 356h70v70h-70zM742 442h70v70h-70zM914 442h70v70h-70z"/></g>
+  <text x="112" y="592" font-family="monospace" font-size="24" fill="#efe7d7">25 GAMES. YOUR NEXT ROUND.</text>
+  <text x="1008" y="592" text-anchor="end" font-family="monospace" font-size="20" fill="#a8a1ae">PLAY CHIPS ONLY</text>
+</svg>

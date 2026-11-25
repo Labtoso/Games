@@ -1,0 +1,384 @@
+<!doctype html><html lang="de"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Nexora · games.labtoso.de</title>
+<meta name="description" content="Nexora: 12 arcade games and 13 casino games with virtual chips. No real money, no sign-up.">
+<meta name="theme-color" content="#131116">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
+
+</head><body>
+
+<div class="wrap">
+  <header>
+    <a class="arcade-back" href="../../">All games</a>
+    <div class="hbar">
+      <h1>NEXORA</h1>
+      <button type="button" class="btn ghost" id="settings-btn" aria-expanded="false" aria-controls="settings">Design</button>
+    </div>
+    <p>NEXORA CASINO · Choose a game, set your chips and start playing. Virtual chips only — no real money.</p>
+  </header>
+
+  <section class="settings" id="settings" aria-label="Design-Einstellungen" hidden>
+    <div class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <div class="settings-top"><div><h2 id="settings-title">LOOK & FEEL</h2><p>Mach NEXORA zu deinem eigenen Casino-Spot.</p></div><button type="button" class="settings-close" id="settings-close" aria-label="Einstellungen schließen">×</button></div>
+      <div class="settings-content" id="settings-content"></div>
+    </div>
+  </section>
+
+  <div class="library-tools">
+    <input id="game-search" type="search" placeholder="Spiel suchen …" aria-label="Spiel suchen">
+    <button type="button" class="btn ghost" id="fav-filter" aria-pressed="false">★ Favoriten</button>
+    <span id="game-count" class="note">25 games</span>
+  </div>
+  <div class="modebar" id="modebar">
+    <button type="button" data-mode="casino" aria-selected="true">✦ Casino</button>
+    <button type="button" data-mode="arcade" aria-selected="false">Arcade</button>
+  </div>
+
+  <nav id="tabs" aria-label="Arcade-Spiele">
+    <button type="button" data-game="snake" aria-selected="true">Snake<small>Rekord: <span data-best="snake">–</span></small></button>
+    <button type="button" data-game="memory" aria-selected="false">Memory<small>Rekord: <span data-best="memory">–</span></small></button>
+    <button type="button" data-game="reaktion" aria-selected="false">Reaktion<small>Rekord: <span data-best="reaktion">–</span></small></button>
+    <button type="button" data-game="klick" aria-selected="false">Klick-Jagd<small>Rekord: <span data-best="klick">–</span></small></button>
+    <button type="button" data-game="merge" aria-selected="false">2048<small>Rekord: <span data-best="merge">–</span></small></button>
+    <button type="button" data-game="flug" aria-selected="false">Flappy Ente<small>Rekord: <span data-best="flug">–</span></small></button>
+    <button type="button" data-game="tictactoe" aria-selected="false">Tic-Tac-Toe<small><span data-best="tictactoe">0 Siege</span> · gegen den Computer</small></button>
+    <button type="button" data-game="whack" aria-selected="false">Whack-a-Mole<small>Triff die auftauchenden Ziele</small></button>
+    <button type="button" data-game="simon" aria-selected="false">Simon Says<small>Merke dir die Farbfolge</small></button>
+    <button type="button" data-game="lights" aria-selected="false">Lights Out<small>Schalte alle Lichter aus</small></button>
+    <button type="button" data-game="guess" aria-selected="false">Zahlenjagd<small>Finde die geheime Zahl</small></button>
+    <button type="button" data-game="pong" aria-selected="false">Pong<small>Schlage den Computer</small></button>
+  </nav>
+
+  <nav id="ctabs" aria-label="Casino-Spiele" hidden>
+    <button type="button" data-game="slots" aria-selected="false">Slots<small>bis ×25</small></button>
+    <button type="button" data-game="roulette" aria-selected="false">Roulette<small>bis ×36</small></button>
+    <button type="button" data-game="rad" aria-selected="false">Glücksrad<small>bis ×10</small></button>
+    <button type="button" data-game="blackjack" aria-selected="false">Blackjack<small>Blackjack ×2,5</small></button>
+    <button type="button" data-game="wuerfel" aria-selected="false">Würfeln<small>bis ×5,5</small></button>
+    <button type="button" data-game="hilo" aria-selected="false">Hoch oder Tief<small>Serie steigert</small></button>
+    <button type="button" data-game="crash" aria-selected="false">Crash<small>Zeitpunkt wählen</small></button>
+    <button type="button" data-game="muenze" aria-selected="false">Münzwurf<small>×1,95</small></button>
+    <button type="button" data-game="entenrennen" aria-selected="false">Entenrennen<small>Quoten wechseln</small></button>
+    <button type="button" data-game="plinko" aria-selected="false">Plinko<small>bis ×10</small></button>
+    <button type="button" data-game="minen" aria-selected="false">Minen<small>Du bestimmst das Risiko</small></button>
+    <button type="button" data-game="rubbel" aria-selected="false">Rubbellos<small>bis ×100</small></button>
+    <button type="button" data-game="dragon" aria-selected="false">Dragon Tower<small>Steig Etage für Etage</small></button>
+  </nav>
+
+  <div class="wallet" id="wallet" hidden>
+    <div class="bankline">
+      <div><span class="lbl">Chip balance</span><span id="bank">1.000</span></div>
+      <span id="bank-delta" aria-live="polite"></span>
+    </div>
+    <input id="bet" type="hidden" value="1">
+    <div class="wl-row nx-bet-status" id="bet-status-row">
+      <div class="nx-bet-status-line">
+        <span class="lbl">Aktueller Einsatz</span>
+        <strong id="bet-display">–</strong>
+        <span id="bet-mode-label" class="nx-bet-mode"></span>
+      </div>
+      <button type="button" class="btn ghost" id="bet-change-btn">Einsatz ändern</button>
+    </div>
+    <div class="wl-row">
+      <button type="button" class="btn alt" id="chips-menu-btn" style="width:100%">Chips</button>
+    </div>
+    <input id="topup" type="hidden" value="1000">
+    <p class="note">Einsatz steuerst du über „Einsatz ändern“.</p>
+  </div>
+
+  <!-- SNAKE -->
+  <section class="stage" id="g-snake">
+    <div class="stage-head">
+      <h2>Snake</h2>
+      <div class="stats"><span>Punkte <b id="snake-score">0</b></span><span>Rekord <b id="snake-best">0</b></span></div>
+    </div>
+    <p class="hint" id="snake-hint">Steuern mit Pfeiltasten oder WASD, am Handy wischen oder die Tasten unten nutzen.</p>
+    <div class="snake-box">
+      <canvas id="snake-canvas" width="400" height="400" aria-label="Snake Spielfeld"></canvas>
+      <div class="dpad" aria-label="Steuerkreuz">
+        <button type="button" class="up" data-dir="up" aria-label="Hoch">▲</button>
+        <button type="button" class="left" data-dir="left" aria-label="Links">◀</button>
+        <button type="button" class="down" data-dir="down" aria-label="Runter">▼</button>
+        <button type="button" class="right" data-dir="right" aria-label="Rechts">▶</button>
+      </div>
+      <button type="button" class="btn" id="snake-start">Neues Spiel</button>
+    </div>
+  </section>
+
+  <!-- MEMORY -->
+  <section class="stage" id="g-memory" hidden>
+    <div class="stage-head">
+      <h2>Memory</h2>
+      <div class="stats"><span>Züge <b id="mem-moves">0</b></span><span>Zeit <b id="mem-time">0:00</b></span></div>
+    </div>
+    <p class="hint" id="mem-hint">Finde alle acht Paare mit möglichst wenigen Zügen.</p>
+    <div class="cards" id="mem-cards"></div>
+    <div class="row"><button type="button" class="btn" id="mem-restart">Neu mischen</button></div>
+  </section>
+
+  <!-- REAKTION -->
+  <section class="stage" id="g-reaktion" hidden>
+    <div class="stage-head">
+      <h2>Reaktionstest</h2>
+      <div class="stats"><span>Schnitt <b id="rx-avg">–</b></span><span>Rekord <b id="rx-best">–</b></span></div>
+    </div>
+    <p class="hint">Warte auf Grün und tippe so schnell du kannst. Zu früh geklickt zählt nicht.</p>
+    <button type="button" id="rx-pad"><span>Tippen zum Starten</span></button>
+    <ul class="history" id="rx-history" aria-label="Letzte Zeiten"></ul>
+  </section>
+
+  <!-- KLICK-JAGD -->
+  <section class="stage" id="g-klick" hidden>
+    <div class="stage-head">
+      <h2>Klick-Jagd</h2>
+      <div class="stats"><span>Treffer <b id="hunt-score">0</b></span><span>Rekord <b id="hunt-best">0</b></span></div>
+    </div>
+    <p class="hint" id="hunt-hint">20 Sekunden Zeit. Das Ziel wird mit jedem Treffer kleiner.</p>
+    <div class="bar" aria-hidden="true"><i id="hunt-bar"></i></div>
+    <div id="hunt-area"><button type="button" id="hunt-target" aria-label="Ziel" hidden></button></div>
+    <div class="row"><button type="button" class="btn" id="hunt-start">Start</button></div>
+  </section>
+
+  <!-- CASINO: SLOTS -->
+  <section class="stage" id="g-slots" hidden>
+    <div class="slots-casino-head"><div><span class="slots-kicker">NEXORA ORIGINAL</span><h2>ROYAL SLOTS</h2><p>Three reels. One big moment.</p></div><div class="slots-jackpot"><small>TOP SYMBOL</small><strong>✦ 7 ✦</strong><span>25× MULTIPLIER</span></div></div>
+    <div class="slots-machine"><div class="slots-machine-top"><span>★ ★ ★ &nbsp; LUCKY SPIN &nbsp; ★ ★ ★</span><i></i></div><div class="slots-frame"><div class="reels" id="reels"><div class="reel"><span>7</span></div><div class="reel"><span>★</span></div><div class="reel"><span>◆</span></div></div></div><div class="slots-leds"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="slots-result"><div><small>LAST WIN</small><strong id="slots-last">0</strong></div><p class="hint" id="slots-hint">Set your bet and spin the reels.</p></div>
+    <p class="paytable slots-paytable">7 ×25 &nbsp;·&nbsp; ★ ×15 &nbsp;·&nbsp; ♥ ×10 &nbsp;·&nbsp; ◆ ×6 &nbsp;·&nbsp; ▲ ×4 &nbsp;·&nbsp; ● ×3 &nbsp;·&nbsp; 2 gleiche ×1,5</p>
+    <div class="slots-action"><button type="button" class="btn" id="slots-spin"><span>✦</span> SPIN <span>✦</span></button></div><div class="odds-row"><button type="button" class="odds-btn" data-odds="slots">ⓘ Odds &amp; payouts</button><div class="odds-pop" id="odds-slots" hidden><strong>Slot odds · fair random draw</strong><p>Each reel is drawn independently from a pool of 21 symbols.</p><ul><li>Three 7s: 0.0108%</li><li>Three stars: 0.0864%</li><li>Three hearts: 0.2915%</li><li>Three diamonds: 0.6911%</li><li>Three triangles: 1.3497%</li><li>Three circles: 2.3324%</li><li>Exactly two matching symbols: 47.619%</li><li>No payout: 47.619%</li></ul><small>Displayed probabilities are rounded. Outcomes are generated randomly; no result is adjusted based on previous spins.</small></div></div>
+  </section>
+
+  <!-- CASINO: ROULETTE -->
+  <section class="stage" id="g-roulette" hidden>
+    <div class="stage-head">
+      <h2>Roulette</h2>
+      <div class="stats"><span>Europäisch, 0 bis 36</span></div>
+    </div>
+    <p class="hint" id="rl-hint">Wähle eine Wette und lass die Kugel rollen.</p>
+    <div class="nx-wheel-wrap">
+      <div class="nx-wheel-pointer" aria-hidden="true">▼</div>
+      <div class="nx-wheel" id="rl-wheel" aria-hidden="true"></div>
+      <div class="rball" id="rl-ball">?</div>
+    </div>
+    <div class="wl-row">
+      <label for="rl-type">Wette</label>
+      <select id="rl-type"></select>
+      <input id="rl-num" type="number" min="0" max="36" step="1" value="17" aria-label="Zahl von 0 bis 36" hidden>
+    </div>
+    <div class="row"><button type="button" class="btn" id="rl-spin">Kugel rollen</button></div>
+    <ul class="history" id="rl-history" aria-label="Letzte Zahlen"></ul>
+  </section>
+
+  <!-- CASINO: GLÜCKSRAD -->
+  <section class="stage" id="g-rad" hidden>
+    <div class="stage-head">
+      <h2>Glücksrad</h2>
+      <div class="stats"><span>Multiplikatoren bis ×10</span></div>
+    </div>
+    <p class="hint" id="rad-hint">Setze, drehe das Rad und lande auf einem Multiplikator.</p>
+    <div class="nx-wheel-wrap">
+      <div class="nx-wheel-pointer" aria-hidden="true">▼</div>
+      <div class="nx-wheel nx-wheel-fortune" id="rad-wheel" aria-hidden="true"></div>
+      <div class="rball" id="rad-result">?</div>
+    </div>
+    <div class="row"><button type="button" class="btn" id="rad-spin">Rad drehen</button></div>
+    <ul class="history" id="rad-history" aria-label="Letzte Ergebnisse"></ul>
+  </section>
+
+  <!-- CASINO: BLACKJACK -->
+  <section class="stage" id="g-blackjack" hidden>
+    <div class="stage-head">
+      <h2>Blackjack</h2>
+      <div class="stats"><span>Dealer hält bei 17</span></div>
+    </div>
+    <p class="hint" id="bj-hint">Teile aus. Wer 21 am nächsten kommt, ohne zu überkaufen, gewinnt.</p>
+    <div class="felt">
+      <div><h3>Dealer<span class="val" id="bj-dval"></span></h3><div class="hand" id="bj-dealer"></div></div>
+      <div><h3>Du<span class="val" id="bj-pval"></span></h3><div class="hand" id="bj-player"></div></div>
+    </div>
+    <div class="row">
+      <button type="button" class="btn" id="bj-deal">Austeilen</button>
+      <button type="button" class="btn alt" id="bj-hit" disabled>Karte</button>
+      <button type="button" class="btn alt" id="bj-stand" disabled>Halten</button>
+      <button type="button" class="btn ghost" id="bj-double" disabled>Verdoppeln</button>
+    </div>
+  </section>
+
+  <!-- CASINO: WÜRFELN -->
+  <section class="stage" id="g-wuerfel" hidden>
+    <div class="stage-head">
+      <h2>Würfeln</h2>
+      <div class="stats"><span>Zwei Würfel, Summe 2 bis 12</span></div>
+    </div>
+    <p class="hint" id="dice-hint">Tippe, ob die Summe unter, genau auf oder über 7 landet.</p>
+    <div class="dice" id="dice"><div class="die"></div><div class="die"></div></div>
+    <div class="sum" id="dice-sum">–</div>
+    <div class="pickrow">
+      <button type="button" class="btn" data-pick="under">Unter 7<small>×2,3</small></button>
+      <button type="button" class="btn" data-pick="seven">Genau 7<small>×5,5</small></button>
+      <button type="button" class="btn" data-pick="over">Über 7<small>×2,3</small></button>
+    </div>
+  </section>
+
+  <!-- CASINO: HOCH ODER TIEF -->
+  <section class="stage" id="g-hilo" hidden>
+    <div class="stage-head">
+      <h2>Hoch oder Tief</h2>
+      <div class="stats"><span>Ass ist die höchste Karte</span></div>
+    </div>
+    <p class="hint" id="hilo-hint">Starte mit deinem Einsatz. Rate, ob die nächste Karte höher oder tiefer ist. Gleiche Karten verlieren.</p>
+    <div class="center">
+      <div id="hilo-card"></div>
+      <div class="pot" id="hilo-pot"></div>
+    </div>
+    <div class="pickrow">
+      <button type="button" class="btn" id="hilo-up" disabled>Höher</button>
+      <button type="button" class="btn" id="hilo-down" disabled>Tiefer</button>
+    </div>
+    <div class="row">
+      <button type="button" class="btn alt" id="hilo-start">Start</button>
+      <button type="button" class="btn ghost" id="hilo-cash" disabled>Auszahlen</button>
+    </div>
+  </section>
+
+  <!-- CASINO: CRASH -->
+  <section class="stage" id="g-crash" hidden>
+    <div class="stage-head">
+      <h2>Crash</h2>
+      <div class="stats"><span>Zahle aus, bevor es kracht</span></div>
+    </div>
+    <p class="hint" id="crash-hint">Der Faktor steigt. Je länger du wartest, desto mehr gewinnst du, bis er plötzlich abstürzt.</p>
+    <div class="crash" id="crash-num">1,00×</div>
+    <div class="row"><button type="button" class="btn" id="crash-btn">Einsatz platzieren</button></div>
+    <ul class="history" id="crash-history" aria-label="Letzte Abstürze"></ul>
+  </section>
+
+  <!-- CASINO: MÜNZWURF -->
+  <section class="stage" id="g-muenze" hidden>
+    <div class="stage-head">
+      <h2>Münzwurf</h2>
+      <div class="stats"><span>Auszahlung ×1,95</span></div>
+    </div>
+    <p class="hint" id="coin-hint">Kopf oder Zahl. Eine Münze, eine Entscheidung.</p>
+    <div class="coin" id="coin">K</div>
+    <div class="pickrow">
+      <button type="button" class="btn" data-side="K">Kopf</button>
+      <button type="button" class="btn" data-side="Z">Zahl</button>
+    </div>
+    <ul class="history" id="coin-history" aria-label="Letzte Würfe"></ul>
+  </section>
+
+  <!-- ARCADE: 2048 -->
+  <section class="stage" id="g-merge" hidden>
+    <div class="stage-head">
+      <h2>2048</h2>
+      <div class="stats"><span>Punkte <b id="m-score">0</b></span><span>Rekord <b id="m-best">0</b></span></div>
+    </div>
+    <p class="hint" id="m-hint">Schiebe mit Pfeiltasten, WASD oder Wischen. Gleiche Zahlen verschmelzen.</p>
+    <div class="board" id="m-board"></div>
+    <div class="row"><button type="button" class="btn" id="m-new">Neues Spiel</button></div>
+  </section>
+
+  <!-- ARCADE: FLAPPY ENTE -->
+  <section class="stage" id="g-flug" hidden>
+    <div class="stage-head">
+      <h2>Flappy Ente</h2>
+      <div class="stats"><span>Punkte <b id="f-score">0</b></span><span>Rekord <b id="f-best">0</b></span></div>
+    </div>
+    <p class="hint" id="f-hint">Tippe, klicke oder drücke die Leertaste, um zu flattern.</p>
+    <canvas id="f-canvas" width="360" height="480" aria-label="Flappy Ente Spielfeld"></canvas>
+  </section>
+
+  <!-- ARCADE: TIC-TAC-TOE -->
+  <section class="stage" id="g-tictactoe" hidden>
+    <div class="stage-head">
+      <h2>Tic-Tac-Toe</h2>
+      <div class="stats"><span>Siege <b id="t-w">0</b></span><span>Remis <b id="t-d">0</b></span><span>Niederlagen <b id="t-l">0</b></span></div>
+    </div>
+    <p class="hint" id="t-hint">Du spielst X und beginnst.</p>
+    <div class="ttt" id="t-board"></div>
+    <div class="wl-row">
+      <label for="t-level">Gegner</label>
+      <select id="t-level"><option value="leicht">Leicht</option><option value="schwer">Unbesiegbar</option></select>
+      <button type="button" class="btn" id="t-new">Neue Runde</button>
+    </div>
+  </section>
+
+  <!-- CASINO: ENTENRENNEN -->
+  <section class="stage" id="g-entenrennen" hidden>
+    <div class="stage-head">
+      <h2>Entenrennen</h2>
+      <div class="stats"><span>Tippe auf deine Ente</span></div>
+    </div>
+    <p class="hint" id="duck-hint">Wähle eine Ente, setze deinen Einsatz und starte das Rennen. Die Quote sinkt mit der Gewinnchance.</p>
+    <div class="track" id="duck-track"></div>
+    <div class="row"><button type="button" class="btn" id="duck-go">Rennen starten</button></div>
+    <ul class="history" id="duck-history" aria-label="Letzte Sieger"></ul>
+  </section>
+
+  <!-- CASINO: PLINKO -->
+  <section class="stage" id="g-plinko" hidden>
+    <div class="stage-head">
+      <h2>Plinko</h2>
+      <div class="stats"><span>Kugeln unterwegs <b id="p-live">0</b></span></div>
+    </div>
+    <p class="hint" id="p-hint">Lass Kugeln fallen. Je weiter außen sie landen, desto mehr zahlen sie.</p>
+    <canvas id="p-canvas" width="360" height="400" aria-label="Plinko Spielfeld"></canvas>
+    <div class="row"><button type="button" class="btn" id="p-drop">Kugel fallen lassen</button></div>
+    <ul class="history" id="p-history" aria-label="Letzte Kugeln"></ul>
+  </section>
+
+  <!-- CASINO: MINEN -->
+  <section class="stage" id="g-minen" hidden>
+    <div class="stage-head">
+      <h2>Minen</h2>
+      <div class="stats"><span>Faktor <b id="mn-mult">×1</b></span></div>
+    </div>
+    <p class="hint" id="mn-hint">Decke Edelsteine auf und zahle aus, bevor du eine Mine erwischst. Mehr Minen bedeuten höhere Faktoren.</p>
+    <div class="wl-row">
+      <label for="mn-count">Minen</label>
+      <select id="mn-count"><option value="1">1</option><option value="3" selected>3</option><option value="5">5</option><option value="10">10</option></select>
+    </div>
+    <div class="mines" id="mn-grid"></div>
+    <div class="row">
+      <button type="button" class="btn" id="mn-start">Runde starten</button>
+      <button type="button" class="btn alt" id="mn-cash" disabled>Auszahlen</button>
+    </div>
+  </section>
+
+  <!-- CASINO: RUBBELLOS -->
+  <section class="stage" id="g-rubbel" hidden>
+    <div class="stage-head">
+      <h2>Rubbellos</h2>
+      <div class="stats"><span>Letzter Gewinn <b id="rb-last">0</b></span></div>
+    </div>
+    <p class="hint" id="rb-hint">Kaufe ein Los und rubble die sechs Felder auf. Drei gleiche Symbole gewinnen.</p>
+    <div class="scratch" id="rb-grid"></div>
+    <p class="paytable">3× ● = ×2 · 3× ▲ = ×3 · 3× ◆ = ×5 · 3× ★ = ×10 · 3× ♥ = ×25 · 3× 7 = ×100</p>
+    <div class="row">
+      <button type="button" class="btn" id="rb-buy">Los kaufen</button>
+      <button type="button" class="btn alt" id="rb-all" disabled>Alles aufdecken</button>
+    </div>
+  </section>
+
+  <!-- EXTRA ARCADE GAMES -->
+  <section class="stage" id="g-whack" hidden><div class="stage-head"><h2>Whack-a-Mole</h2><div class="stats">Treffer <b id="wh-score">0</b> · Zeit <b id="wh-time">20</b></div></div><p class="hint" id="wh-hint">Triff so viele Ziele wie möglich in 20 Sekunden.</p><div class="wh-grid" id="wh-grid"></div><button class="btn" id="wh-start">Start</button></section>
+  <section class="stage" id="g-simon" hidden><div class="stage-head"><h2>Simon Says</h2><div class="stats">Level <b id="si-level">0</b></div></div><p class="hint" id="si-hint">Merke dir die Reihenfolge und wiederhole sie.</p><div class="simon-grid" id="si-grid"><button data-color="0" aria-label="Grün"></button><button data-color="1" aria-label="Rot"></button><button data-color="2" aria-label="Gelb"></button><button data-color="3" aria-label="Blau"></button></div><button class="btn" id="si-start">Start</button></section>
+  <section class="stage" id="g-lights" hidden><div class="stage-head"><h2>Lights Out</h2><div class="stats">Züge <b id="li-moves">0</b></div></div><p class="hint" id="li-hint">Schalte alle Lichter aus. Jeder Klick verändert auch die Nachbarfelder.</p><div class="lights-grid" id="li-grid"></div><button class="btn" id="li-new">Neues Rätsel</button></section>
+  <section class="stage" id="g-guess" hidden><div class="stage-head"><h2>Zahlenjagd</h2><div class="stats">Versuche <b id="gu-tries">0</b></div></div><p class="hint" id="gu-hint">Ich denke an eine Zahl zwischen 1 und 100.</p><div class="row"><input type="number" id="gu-input" min="1" max="100" placeholder="Dein Tipp"><button class="btn" id="gu-check">Prüfen</button><button class="btn ghost" id="gu-new">Neu</button></div></section>
+  <section class="stage" id="g-pong" hidden><div class="stage-head"><h2>Pong</h2><div class="stats">Du <b id="po-player">0</b> : <b id="po-ai">0</b> CPU</div></div><p class="hint">Steuere deinen Schläger mit W/S oder ↑/↓. Am Handy die Buttons verwenden.</p><canvas id="po-canvas" width="600" height="360" aria-label="Pong Spielfeld"></canvas><div class="row"><button class="btn ghost" id="po-up">▲ Hoch</button><button class="btn ghost" id="po-down">▼ Runter</button><button class="btn" id="po-start">Start / Neustart</button></div></section>
+
+  <!-- CASINO: DRAGON TOWER -->
+  <section class="stage" id="g-dragon" hidden>
+    <div class="stage-head"><h2>Dragon Tower</h2><div class="stats"><span>Etage <b id="dt-floor">0 / 10</b></span><span>Faktor <b id="dt-mult">×1.00</b></span></div></div>
+    <p class="hint" id="dt-hint">Wähle eine Tür pro Etage. Hinter einer Tür wartet der Drache. Du kannst nach jeder sicheren Etage auszahlen.</p>
+    <div class="tower-floor"><span>🏰 NEXORA TOWER</span><strong id="dt-status">Bereit für den Aufstieg</strong></div>
+    <div class="tower-levels" id="dt-levels"><div class="tower-level" data-level="0"><span class="tower-level-label">01</span><div class="tower-grid" data-floor="0"><button class="tower-door" type="button" data-door="0" data-floor="0" disabled aria-label="Floor 1, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="0" disabled aria-label="Floor 1, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="0" disabled aria-label="Floor 1, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="0" disabled aria-label="Floor 1, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="1"><span class="tower-level-label">02</span><div class="tower-grid" data-floor="1"><button class="tower-door" type="button" data-door="0" data-floor="1" disabled aria-label="Floor 2, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="1" disabled aria-label="Floor 2, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="1" disabled aria-label="Floor 2, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="1" disabled aria-label="Floor 2, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="2"><span class="tower-level-label">03</span><div class="tower-grid" data-floor="2"><button class="tower-door" type="button" data-door="0" data-floor="2" disabled aria-label="Floor 3, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="2" disabled aria-label="Floor 3, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="2" disabled aria-label="Floor 3, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="2" disabled aria-label="Floor 3, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="3"><span class="tower-level-label">04</span><div class="tower-grid" data-floor="3"><button class="tower-door" type="button" data-door="0" data-floor="3" disabled aria-label="Floor 4, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="3" disabled aria-label="Floor 4, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="3" disabled aria-label="Floor 4, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="3" disabled aria-label="Floor 4, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="4"><span class="tower-level-label">05</span><div class="tower-grid" data-floor="4"><button class="tower-door" type="button" data-door="0" data-floor="4" disabled aria-label="Floor 5, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="4" disabled aria-label="Floor 5, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="4" disabled aria-label="Floor 5, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="4" disabled aria-label="Floor 5, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="5"><span class="tower-level-label">06</span><div class="tower-grid" data-floor="5"><button class="tower-door" type="button" data-door="0" data-floor="5" disabled aria-label="Floor 6, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="5" disabled aria-label="Floor 6, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="5" disabled aria-label="Floor 6, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="5" disabled aria-label="Floor 6, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="6"><span class="tower-level-label">07</span><div class="tower-grid" data-floor="6"><button class="tower-door" type="button" data-door="0" data-floor="6" disabled aria-label="Floor 7, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="6" disabled aria-label="Floor 7, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="6" disabled aria-label="Floor 7, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="6" disabled aria-label="Floor 7, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="7"><span class="tower-level-label">08</span><div class="tower-grid" data-floor="7"><button class="tower-door" type="button" data-door="0" data-floor="7" disabled aria-label="Floor 8, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="7" disabled aria-label="Floor 8, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="7" disabled aria-label="Floor 8, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="7" disabled aria-label="Floor 8, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="8"><span class="tower-level-label">09</span><div class="tower-grid" data-floor="8"><button class="tower-door" type="button" data-door="0" data-floor="8" disabled aria-label="Floor 9, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="8" disabled aria-label="Floor 9, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="8" disabled aria-label="Floor 9, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="8" disabled aria-label="Floor 9, door 4"></button></div><span class="tower-level-state">LOCKED</span></div><div class="tower-level" data-level="9"><span class="tower-level-label">10</span><div class="tower-grid" data-floor="9"><button class="tower-door" type="button" data-door="0" data-floor="9" disabled aria-label="Floor 10, door 1"></button><button class="tower-door" type="button" data-door="1" data-floor="9" disabled aria-label="Floor 10, door 2"></button><button class="tower-door" type="button" data-door="2" data-floor="9" disabled aria-label="Floor 10, door 3"></button><button class="tower-door" type="button" data-door="3" data-floor="9" disabled aria-label="Floor 10, door 4"></button></div><span class="tower-level-state">LOCKED</span></div></div>
+    <div class="row"><button type="button" class="btn" id="dt-start">Run starten</button><button type="button" class="btn alt" id="dt-cash" disabled>Auszahlen</button></div>
+    <p class="note">Nur virtuelle Spielchips. Der Run endet beim Drachen oder wenn du freiwillig auszahlst.</p>
+  </section>
+
+  <footer>NEXORA ARCADE · Favorites, records and design settings are saved locally in this browser. Casino chips are play points only.<small class="nexora-credit">build by Felix</small></footer>
+</div>
+
+<script src="app.js"></script>
+</body></html>
